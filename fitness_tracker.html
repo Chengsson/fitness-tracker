@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>21天減脂任務系統</title>
+<style>
+  :root {
+    --bg: #0f0f1a;
+    --card: #1a1a2e;
+    --card2: #16213e;
+    --accent: #e94560;
+    --gold: #ffd700;
+    --green: #00d4aa;
+    --blue: #4fc3f7;
+    --purple: #9c27b0;
+    --orange: #ff6b35;
+    --text: #e0e0e0;
+    --muted: #888;
+    --border: #2a2a4a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, 'Noto Sans TC', sans-serif; min-height: 100vh; }
+
+  /* NAV */
+  .nav { position: fixed; bottom: 0; left: 0; right: 0; background: #111122; border-top: 1px solid var(--border); display: flex; z-index: 100; }
+  .nav-btn { flex: 1; padding: 10px 4px 14px; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10px; color: var(--muted); cursor: pointer; border: none; background: none; transition: color .2s; }
+  .nav-btn.active { color: var(--accent); }
+  .nav-btn svg { width: 22px; height: 22px; }
+
+  /* PAGES */
+  .page { display: none; padding: 16px 14px 90px; max-width: 480px; margin: 0 auto; }
+  .page.active { display: block; }
+
+  /* HEADER */
+  .page-header { text-align: center; margin-bottom: 20px; }
+  .page-title { font-size: 20px; font-weight: 700; }
+  .page-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* CARDS */
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+
+  /* PROGRESS BAR */
+  .prog-wrap { background: #222; border-radius: 999px; height: 10px; overflow: hidden; margin: 6px 0; }
+  .prog-bar { height: 100%; border-radius: 999px; transition: width .5s ease; }
+  .prog-bar.accent { background: linear-gradient(90deg, var(--accent), #ff8c69); }
+  .prog-bar.green { background: linear-gradient(90deg, var(--green), #00ff88); }
+  .prog-bar.gold { background: linear-gradient(90deg, var(--gold), #ffaa00); }
+  .prog-bar.blue { background: linear-gradient(90deg, var(--blue), #0288d1); }
+
+  /* XP / LEVEL */
+  .level-box { display: flex; align-items: center; gap: 14px; }
+  .level-circle { width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--purple)); display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 0 20px rgba(233,69,96,.4); }
+  .level-circle span:first-child { font-size: 10px; color: rgba(255,255,255,.7); }
+  .level-circle span:last-child { font-size: 22px; font-weight: 900; }
+  .level-info { flex: 1; }
+  .level-name { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .level-xp { font-size: 12px; color: var(--muted); }
+
+  /* STAT GRID */
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat-item { background: var(--card2); border-radius: 10px; padding: 12px; text-align: center; }
+  .stat-val { font-size: 22px; font-weight: 800; }
+  .stat-label { font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .stat-delta { font-size: 11px; margin-top: 4px; }
+  .stat-delta.up { color: var(--accent); }
+  .stat-delta.down { color: var(--green); }
+
+  /* QUEST LIST */
+  .quest-item { display: flex; align-items: center; gap: 12px; padding: 13px 0; border-bottom: 1px solid var(--border); cursor: pointer; user-select: none; }
+  .quest-item:last-child { border-bottom: none; }
+  .quest-check { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--border); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all .2s; }
+  .quest-item.done .quest-check { background: var(--green); border-color: var(--green); }
+  .quest-item.done .quest-text { text-decoration: line-through; color: var(--muted); }
+  .quest-text { font-size: 14px; flex: 1; }
+  .quest-xp { font-size: 11px; color: var(--gold); font-weight: 700; white-space: nowrap; }
+  .quest-icon { font-size: 20px; flex-shrink: 0; }
+
+  /* BADGE */
+  .badge { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+  .badge.gold { background: rgba(255,215,0,.15); color: var(--gold); border: 1px solid rgba(255,215,0,.3); }
+  .badge.green { background: rgba(0,212,170,.15); color: var(--green); border: 1px solid rgba(0,212,170,.3); }
+  .badge.red { background: rgba(233,69,96,.15); color: var(--accent); border: 1px solid rgba(233,69,96,.3); }
+  .badge.blue { background: rgba(79,195,247,.15); color: var(--blue); border: 1px solid rgba(79,195,247,.3); }
+
+  /* WORKOUT */
+  .day-tabs { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px; }
+  .day-tab { padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; border: 2px solid var(--border); color: var(--muted); background: none; transition: all .2s; }
+  .day-tab.active { background: var(--accent); border-color: var(--accent); color: white; }
+  .day-tab.done { border-color: var(--green); color: var(--green); }
+
+  .intensity-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+  .int-tab { flex: 1; padding: 8px; text-align: center; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; border: 2px solid var(--border); background: none; color: var(--muted); transition: all .2s; }
+  .int-tab[data-level="A"].active { background: rgba(0,212,170,.2); border-color: var(--green); color: var(--green); }
+  .int-tab[data-level="B"].active { background: rgba(79,195,247,.2); border-color: var(--blue); color: var(--blue); }
+  .int-tab[data-level="C"].active { background: rgba(255,107,53,.2); border-color: var(--orange); color: var(--orange); }
+
+  .exercise-row { display: flex; align-items: flex-start; gap: 12px; padding: 13px 0; border-bottom: 1px solid var(--border); }
+  .exercise-row:last-child { border-bottom: none; }
+  .exercise-num { width: 28px; height: 28px; border-radius: 50%; background: var(--border); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+  .exercise-info { flex: 1; }
+  .exercise-name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .exercise-meta { font-size: 12px; color: var(--muted); }
+  .exercise-note { font-size: 11px; color: var(--gold); margin-top: 2px; }
+  .exercise-check { width: 32px; height: 32px; border-radius: 8px; border: 2px solid var(--border); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: all .2s; flex-shrink: 0; }
+  .exercise-check.done { background: var(--green); border-color: var(--green); }
+
+  /* INPUT */
+  .input-group { margin-bottom: 14px; }
+  .input-label { font-size: 12px; color: var(--muted); margin-bottom: 6px; display: block; }
+  .input-row { display: flex; align-items: center; gap: 10px; }
+  input[type="number"], input[type="text"] { background: var(--card2); border: 1px solid var(--border); border-radius: 10px; color: var(--text); padding: 11px 14px; font-size: 16px; width: 100%; outline: none; -webkit-appearance: none; }
+  input:focus { border-color: var(--accent); }
+  .input-unit { color: var(--muted); font-size: 14px; white-space: nowrap; }
+
+  .btn { display: block; width: 100%; padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 700; text-align: center; cursor: pointer; border: none; transition: all .2s; margin-top: 10px; }
+  .btn-primary { background: linear-gradient(135deg, var(--accent), #c1373e); color: white; }
+  .btn-green { background: linear-gradient(135deg, var(--green), #009977); color: white; }
+  .btn:active { transform: scale(.97); }
+
+  /* CHART */
+  .mini-chart { height: 80px; position: relative; display: flex; align-items: flex-end; gap: 4px; padding: 0 4px; }
+  .chart-bar { flex: 1; border-radius: 4px 4px 0 0; min-height: 4px; background: linear-gradient(180deg, var(--accent), rgba(233,69,96,.4)); position: relative; transition: height .4s ease; }
+  .chart-bar.today { background: linear-gradient(180deg, var(--gold), rgba(255,215,0,.4)); }
+  .chart-label { position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%); font-size: 9px; color: var(--muted); white-space: nowrap; }
+
+  /* FOOD TABLE */
+  .food-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .food-table th { color: var(--muted); font-weight: 600; padding: 6px 8px; text-align: left; border-bottom: 1px solid var(--border); }
+  .food-table td { padding: 9px 8px; border-bottom: 1px solid rgba(255,255,255,.04); }
+  .food-badge { padding: 2px 7px; border-radius: 5px; font-size: 11px; font-weight: 700; }
+  .fb-best { background: rgba(0,212,170,.2); color: var(--green); }
+  .fb-ok { background: rgba(79,195,247,.2); color: var(--blue); }
+  .fb-avoid { background: rgba(233,69,96,.2); color: var(--accent); }
+
+  /* SECTION TITLE */
+  .section-title { font-size: 16px; font-weight: 700; margin: 20px 0 12px; display: flex; align-items: center; gap: 8px; }
+  .section-title::before { content: ''; display: block; width: 4px; height: 18px; border-radius: 2px; background: var(--accent); }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--green); color: #000; padding: 10px 20px; border-radius: 20px; font-weight: 700; font-size: 14px; opacity: 0; transition: all .3s; z-index: 999; white-space: nowrap; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* CONFETTI */
+  @keyframes confettiDrop { to { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
+  .confetti { position: fixed; top: -10px; width: 10px; height: 10px; border-radius: 2px; animation: confettiDrop 1.5s ease-in forwards; z-index: 9999; pointer-events: none; }
+
+  /* ASSESSMENT */
+  .assess-q { padding: 13px 0; border-bottom: 1px solid var(--border); }
+  .assess-q:last-child { border-bottom: none; }
+  .assess-q-text { font-size: 14px; margin-bottom: 10px; }
+  .assess-q-hint { font-size: 11px; color: var(--muted); margin-bottom: 10px; }
+  .assess-btns { display: flex; gap: 8px; }
+  .assess-btn { flex: 1; padding: 9px; border-radius: 10px; border: 2px solid var(--border); background: none; color: var(--muted); font-size: 14px; font-weight: 700; cursor: pointer; transition: all .2s; }
+  .assess-btn.yes.selected { background: rgba(0,212,170,.2); border-color: var(--green); color: var(--green); }
+  .assess-btn.no.selected { background: rgba(233,69,96,.15); border-color: var(--accent); color: var(--accent); }
+
+  .result-box { background: var(--card2); border-radius: 12px; padding: 16px; text-align: center; margin-top: 14px; }
+  .result-level { font-size: 32px; font-weight: 900; margin-bottom: 6px; }
+  .result-desc { font-size: 14px; color: var(--muted); }
+
+  /* WEEK PLAN */
+  .week-row { display: flex; gap: 4px; margin-bottom: 6px; }
+  .week-cell { flex: 1; padding: 8px 4px; border-radius: 8px; text-align: center; font-size: 11px; font-weight: 600; }
+  .week-cell.header { color: var(--muted); background: none; }
+  .week-cell.workout { background: rgba(233,69,96,.15); color: var(--accent); border: 1px solid rgba(233,69,96,.3); }
+  .week-cell.rest { background: rgba(136,136,136,.08); color: var(--muted); }
+  .week-cell.cardio { background: rgba(79,195,247,.1); color: var(--blue); border: 1px solid rgba(79,195,247,.2); }
+  .week-cell.today-cell { border: 2px solid var(--gold) !important; }
+
+  /* SCROLL HINT */
+  .scroll-hint { text-align: center; font-size: 11px; color: var(--muted); padding: 8px 0; }
+
+  /* HISTORY LIST */
+  .history-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .history-item:last-child { border-bottom: none; }
+  .history-date { font-size: 13px; color: var(--muted); }
+  .history-val { font-size: 15px; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ====== PAGE: DASHBOARD ====== -->
+<div class="page active" id="page-home">
+  <div class="page-header">
+    <div style="font-size:28px">⚔️</div>
+    <div class="page-title">21天減脂啟動計畫</div>
+    <div class="page-sub" id="today-date-display"></div>
+  </div>
+
+  <!-- LEVEL -->
+  <div class="card">
+    <div class="level-box">
+      <div class="level-circle">
+        <span>Lv.</span>
+        <span id="user-level">1</span>
+      </div>
+      <div class="level-info">
+        <div class="level-name" id="level-title">健身新手</div>
+        <div class="level-xp"><span id="cur-xp">0</span> / <span id="max-xp">100</span> XP</div>
+        <div class="prog-wrap" style="margin-top:8px">
+          <div class="prog-bar accent" id="xp-bar" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stat-grid" style="margin-bottom:14px">
+    <div class="stat-item">
+      <div class="stat-val" style="color:var(--accent)" id="day-count">1</div>
+      <div class="stat-label">第幾天</div>
+      <div class="stat-delta" id="day-pct"></div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-val" style="color:var(--gold)" id="streak-count">0</div>
+      <div class="stat-label">🔥 連續天數</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-val" style="color:var(--green)" id="weight-display">83.7</div>
+      <div class="stat-label">體重 (kg)</div>
+      <div class="stat-delta down" id="weight-delta"></div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-val" style="color:var(--blue)" id="quest-pct-display">0%</div>
+      <div class="stat-label">今日任務</div>
+    </div>
+  </div>
+
+  <!-- 21 day progress -->
+  <div class="card">
+    <div class="card-title">21天進度</div>
+    <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
+      <span>Day <span id="prog-day">1</span></span>
+      <span style="color:var(--gold)" id="prog-pct">0%</span>
+    </div>
+    <div class="prog-wrap" style="height:14px">
+      <div class="prog-bar gold" id="overall-bar" style="width:0%"></div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:8px;display:flex;justify-content:space-between">
+      <span>開始 2026-06-29</span><span>目標 -1.5~3 kg</span>
+    </div>
+  </div>
+
+  <!-- GOALS -->
+  <div class="card">
+    <div class="card-title">21天目標</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px">
+          <span>體重 (目標 -1.5~3 kg)</span>
+          <span style="color:var(--accent)" id="wt-goal-val">-0 kg</span>
+        </div>
+        <div class="prog-wrap"><div class="prog-bar accent" id="wt-goal-bar" style="width:0%"></div></div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px">
+          <span>重訓次數 (目標 12次/21天)</span>
+          <span style="color:var(--green)" id="gym-count">0/12</span>
+        </div>
+        <div class="prog-wrap"><div class="prog-bar green" id="gym-bar" style="width:0%"></div></div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px">
+          <span>無糖飲料達成</span>
+          <span style="color:var(--blue)" id="drink-count">0/21天</span>
+        </div>
+        <div class="prog-wrap"><div class="prog-bar blue" id="drink-bar" style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- InBody -->
+  <div class="card">
+    <div class="card-title">InBody 基準值</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">
+      <div style="color:var(--muted)">身高</div><div>168 cm</div>
+      <div style="color:var(--muted)">體重</div><div id="ib-weight">83.7 kg</div>
+      <div style="color:var(--muted)">骨骼肌量</div><div>31.5 kg</div>
+      <div style="color:var(--muted)">體脂肪量</div><div>27.9 kg</div>
+      <div style="color:var(--muted)">體脂率</div><div>33.3%</div>
+      <div style="color:var(--muted)">BMI</div><div>29.7</div>
+      <div style="color:var(--muted)">腰臀比</div><div>0.98</div>
+      <div style="color:var(--muted)">基礎代謝率</div><div>1575 kcal</div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== PAGE: DAILY QUEST ====== -->
+<div class="page" id="page-quest">
+  <div class="page-header">
+    <div style="font-size:28px">📋</div>
+    <div class="page-title">每日任務</div>
+    <div class="page-sub" id="quest-date"></div>
+  </div>
+
+  <!-- TODAY TYPE -->
+  <div class="card" style="text-align:center;padding:12px">
+    <div style="font-size:13px;color:var(--muted);margin-bottom:8px">今日狀態</div>
+    <div style="display:flex;gap:8px;justify-content:center">
+      <button class="assess-btn" id="type-workout" onclick="setDayType('workout')" style="flex:none;padding:10px 20px">💪 重訓日</button>
+      <button class="assess-btn" id="type-rest" onclick="setDayType('rest')" style="flex:none;padding:10px 20px">🛌 休息日</button>
+    </div>
+  </div>
+
+  <!-- QUESTS -->
+  <div class="card" id="quest-list">
+    <div class="card-title">今日任務 <span id="quest-score" style="color:var(--gold)">0 XP</span></div>
+  </div>
+
+  <!-- BONUS -->
+  <div class="card">
+    <div class="card-title">額外加成</div>
+    <div id="bonus-list"></div>
+  </div>
+
+  <!-- NOTES -->
+  <div class="card">
+    <div class="card-title">今日紀錄</div>
+    <div class="input-group">
+      <label class="input-label">體重 (早上空腹)</label>
+      <div class="input-row">
+        <input type="number" id="today-weight" step="0.1" placeholder="83.7" style="max-width:130px">
+        <span class="input-unit">kg</span>
+      </div>
+    </div>
+    <div class="input-group">
+      <label class="input-label">步數</label>
+      <div class="input-row">
+        <input type="number" id="today-steps" step="100" placeholder="6000">
+        <span class="input-unit">步</span>
+      </div>
+    </div>
+    <div class="input-group">
+      <label class="input-label">備註 (可空白)</label>
+      <input type="text" id="today-note" placeholder="今天感覺怎樣？">
+    </div>
+    <button class="btn btn-primary" onclick="saveDailyLog()">💾 儲存今日紀錄</button>
+  </div>
+</div>
+
+<!-- ====== PAGE: WORKOUT ====== -->
+<div class="page" id="page-workout">
+  <div class="page-header">
+    <div style="font-size:28px">🏋️</div>
+    <div class="page-title">重訓課表</div>
+    <div class="page-sub">每週4次 | A/B/C 動態版本</div>
+  </div>
+
+  <!-- ASSESSMENT -->
+  <div class="card">
+    <div class="card-title">訓練前自評 (選今日狀態)</div>
+    <div id="assess-questions"></div>
+    <div class="result-box" id="assess-result" style="display:none">
+      <div class="result-level" id="assess-level-display">A 好</div>
+      <div class="result-desc" id="assess-desc">完整課表，不要每組力竭</div>
+    </div>
+  </div>
+
+  <!-- DAY SELECTOR -->
+  <div class="card-title" style="margin:0 0 8px;padding:0 2px">選擇訓練日</div>
+  <div class="day-tabs" id="day-tabs">
+    <button class="day-tab active" data-day="1" onclick="selectDay(1)">Day 1<br><small>胸＋背</small></button>
+    <button class="day-tab" data-day="2" onclick="selectDay(2)">Day 2<br><small>腿＋臀</small></button>
+    <button class="day-tab" data-day="3" onclick="selectDay(3)">Day 3<br><small>肩＋背</small></button>
+    <button class="day-tab" data-day="4" onclick="selectDay(4)">Day 4<br><small>全身</small></button>
+  </div>
+
+  <div class="intensity-tabs" id="intensity-tabs">
+    <button class="int-tab active" data-level="A" onclick="selectIntensity('A')">A 好<br>完整版</button>
+    <button class="int-tab" data-level="B" onclick="selectIntensity('B')">B 普通<br>縮短版</button>
+    <button class="int-tab" data-level="C" onclick="selectIntensity('C')">C 疲勞<br>簡化版</button>
+  </div>
+
+  <div class="card" id="exercise-list">
+    <!-- filled by JS -->
+  </div>
+
+  <button class="btn btn-green" onclick="finishWorkout()">✅ 完成今日訓練 (+30 XP)</button>
+</div>
+
+<!-- ====== PAGE: TRACKING ====== -->
+<div class="page" id="page-track">
+  <div class="page-header">
+    <div style="font-size:28px">📊</div>
+    <div class="page-title">進度追蹤</div>
+    <div class="page-sub">每天一次，早上空腹量</div>
+  </div>
+
+  <!-- WEIGHT CHART -->
+  <div class="card">
+    <div class="card-title">體重趨勢 (最近7天)</div>
+    <div class="mini-chart" id="weight-chart"></div>
+    <div style="height:24px"></div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="card">
+    <div class="card-title">記錄歷史</div>
+    <div id="history-list">
+      <div style="text-align:center;color:var(--muted);padding:20px;font-size:14px">還沒有記錄<br>從每日任務開始記錄體重吧！</div>
+    </div>
+  </div>
+
+  <!-- CARDIO PLAN -->
+  <div class="card">
+    <div class="card-title">有氧計畫 (跑步機)</div>
+    <div style="overflow-x:auto">
+      <table class="food-table">
+        <tr><th>週數</th><th>次/週</th><th>時間</th><th>坡度</th><th>成就</th></tr>
+        <tr><td>第1週</td><td>3次</td><td>5–8分</td><td>4–6%</td><td>習慣養成</td></tr>
+        <tr><td>第2週</td><td>3次</td><td>8–10分</td><td>4–8%</td><td>1–2公里</td></tr>
+        <tr><td>第3週</td><td>3次</td><td>10–12分</td><td>5–8%</td><td>不需要走</td></tr>
+        <tr><td>第4週</td><td>3次</td><td>12–15分</td><td>6–10%</td><td>開始挑戰</td></tr>
+      </table>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-top:10px">
+      💡 步數目標：第1週6000步 → 第2–3週7000步 → 第4週8000步+
+    </div>
+  </div>
+
+  <!-- WEEKLY REVIEW -->
+  <div class="card">
+    <div class="card-title">每週自評結果對照</div>
+    <table class="food-table">
+      <tr><th>結果</th><th>調整</th><th>下一步</th></tr>
+      <tr><td>平均週降 -0.4~0.9kg</td><td>繼續</td><td>維持</td></tr>
+      <tr><td>未降，沒變化</td><td>可能太多</td><td>碳水 -1/4份，步數+1000</td></tr>
+      <tr><td>降>1.2kg 且疲勞</td><td>太快</td><td>重訓日增加一點澱粉</td></tr>
+      <tr><td>重訓量不足</td><td>太多其他</td><td>縮短有氧，集中重訓</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ====== PAGE: FOOD GUIDE ====== -->
+<div class="page" id="page-food">
+  <div class="page-header">
+    <div style="font-size:28px">🍱</div>
+    <div class="page-title">飲食指南</div>
+    <div class="page-sub">份量法 · 台灣外食版</div>
+  </div>
+
+  <!-- DAILY PORTIONS -->
+  <div class="card">
+    <div class="card-title">每日份量標準</div>
+    <div style="overflow-x:auto">
+      <table class="food-table">
+        <tr><th>情境</th><th>蛋白質</th><th>澱粉</th><th>蔬菜</th><th>宵夜</th></tr>
+        <tr style="color:var(--green)"><td>重訓日</td><td>每餐1.5–2掌</td><td>每餐1拳</td><td>1.5–2拳</td><td>蛋白質型</td></tr>
+        <tr style="color:var(--blue)"><td>休息日</td><td>每餐1.5–2掌</td><td>每餐0.5拳</td><td>2拳</td><td>盡量不吃</td></tr>
+        <tr style="color:var(--muted)"><td>失控日</td><td>下一餐補足</td><td>回到正常</td><td>增加</td><td>不要延續</td></tr>
+      </table>
+    </div>
+    <div style="background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.2);border-radius:10px;padding:12px;margin-top:12px;font-size:13px">
+      <div style="color:var(--gold);font-weight:700;margin-bottom:6px">🎯 每日蛋白質目標</div>
+      <div>每日：130–160g　高蛋白：1–2份/天　肌酸：3–5g/天</div>
+    </div>
+  </div>
+
+  <!-- FORBIDDEN -->
+  <div class="card">
+    <div class="card-title">⛔ 21天禁區</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;align-items:center;gap:10px;padding:8px;background:rgba(233,69,96,.08);border-radius:8px">
+        <span style="font-size:20px">🥤</span>
+        <div><div style="font-size:13px;font-weight:600">含糖飲料</div><div style="font-size:11px;color:var(--muted)">21天先歸零，只喝無糖</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:8px;background:rgba(233,69,96,.08);border-radius:8px">
+        <span style="font-size:20px">🍟</span>
+        <div><div style="font-size:13px;font-weight:600">宵夜炸物</div><div style="font-size:11px;color:var(--muted)">先不要，宵夜改蛋白質型</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:8px;background:rgba(255,215,0,.06);border-radius:8px">
+        <span style="font-size:20px">🍳</span>
+        <div><div style="font-size:13px;font-weight:600">炒飯/炒麵</div><div style="font-size:11px;color:var(--muted)">每週最多1次，當天其他餐減澱粉</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BENTO GUIDE -->
+  <div class="card">
+    <div class="card-title">便當點法</div>
+    <div style="overflow-x:auto">
+      <table class="food-table">
+        <tr><th>類型</th><th>OK?</th><th>飯量</th><th>一句話</th></tr>
+        <tr><td>雞腿便當</td><td><span class="food-badge fb-ok">可以</span></td><td>半份</td><td>去皮較好</td></tr>
+        <tr><td>滷排骨</td><td><span class="food-badge fb-ok">可以</span></td><td>半份</td><td>不要拌滷汁</td></tr>
+        <tr><td>魚便當</td><td><span class="food-badge fb-best">推薦</span></td><td>半份</td><td>魚＋半飯</td></tr>
+        <tr><td>炸雞腿</td><td><span class="food-badge fb-avoid">少吃</span></td><td>半以下</td><td>第一階段少碰</td></tr>
+        <tr><td>自助餐</td><td><span class="food-badge fb-best">推薦</span></td><td>半份</td><td>蛋白先夾夠</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- SNACK LIST -->
+  <div class="card">
+    <div class="card-title">宵夜替代清單</div>
+    <table class="food-table">
+      <tr><th>等級</th><th>食物</th><th>份量</th><th>用途</th></tr>
+      <tr><td><span class="food-badge fb-best">最佳</span></td><td>高蛋白</td><td>1份</td><td>取代宵夜</td></tr>
+      <tr><td><span class="food-badge fb-best">最佳</span></td><td>茶葉蛋</td><td>2顆</td><td>低成本</td></tr>
+      <tr><td><span class="food-badge fb-ok">佳</span></td><td>無糖豆漿</td><td>1瓶</td><td>增加飽足</td></tr>
+      <tr><td><span class="food-badge fb-ok">佳</span></td><td>雞胸肉</td><td>1份</td><td>高蛋白</td></tr>
+      <tr><td><span class="food-badge fb-ok">可</span></td><td>希臘優格</td><td>1份</td><td>想吃甜</td></tr>
+      <tr><td><span class="food-badge fb-avoid">避免</span></td><td>泡麵/炸物</td><td>0</td><td>先停止</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav class="nav">
+  <button class="nav-btn active" onclick="showPage('home',this)">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+    首頁
+  </button>
+  <button class="nav-btn" onclick="showPage('quest',this)">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+    每日任務
+  </button>
+  <button class="nav-btn" onclick="showPage('workout',this)">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/></svg>
+    重訓
+  </button>
+  <button class="nav-btn" onclick="showPage('track',this)">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>
+    追蹤
+  </button>
+  <button class="nav-btn" onclick="showPage('food',this)">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.06 22.99h1.66c.84 0 1.53-.64 1.63-1.46L23 5.05h-5V1h-1.97v4.05h-4.97l.3 2.34c1.71.47 3.31 1.32 4.27 2.26 1.44 1.42 2.43 2.89 2.43 5.29v8.05zM1 21.99V21h15.03v.99c0 .55-.45 1-1.01 1H2.01c-.56 0-1.01-.45-1.01-1zm15.03-7c0-4.5-6.75-5-8.51-5-1.76 0-8.51.5-8.51 5v2H16.03v-2z"/></svg>
+    飲食
+  </button>
+</nav>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const START_DATE = new Date('2026-06-29');
+const TOTAL_DAYS = 21;
+const INIT_WEIGHT = 83.7;
+
+const WORKOUTS = {
+  1: {
+    title: 'Day 1 — 胸＋背',
+    A: [
+      { name:'槓鈴臥推', sets:4, reps:'5–8', rest:'2–3分', note:'最擅長項目', key:'主動作' },
+      { name:'坐姿划船', sets:4, reps:'8–12', rest:'90秒', note:'肩胛往後收', key:'補背' },
+      { name:'上斜啞鈴臥推', sets:3, reps:'8–12', rest:'90秒', note:'', key:'胸上部' },
+      { name:'滑輪下拉', sets:3, reps:'10–12', rest:'90秒', note:'不要聳肩', key:'闊背' },
+      { name:'側平舉', sets:3, reps:'12–15', rest:'60秒', note:'輕重量', key:'肩中束' },
+    ],
+    B: [
+      { name:'槓鈴臥推', sets:3, reps:'6–8', rest:'2分', note:'', key:'保主動作' },
+      { name:'坐姿划船', sets:3, reps:'10', rest:'90秒', note:'', key:'保背量' },
+    ],
+    C: [
+      { name:'機械胸推', sets:3, reps:'10', rest:'90秒', note:'', key:'簡化' },
+      { name:'坐姿划船', sets:3, reps:'10', rest:'90秒', note:'', key:'簡化' },
+    ]
+  },
+  2: {
+    title: 'Day 2 — 腿＋臀＋核心',
+    A: [
+      { name:'深蹲', sets:4, reps:'5–8', rest:'2–3分', note:'不用硬拚重量', key:'動作品質' },
+      { name:'腿推', sets:3, reps:'10–12', rest:'90秒', note:'', key:'腿量' },
+      { name:'啞鈴RDL', sets:3, reps:'8–10', rest:'90秒', note:'先學髖折疊', key:'髖關節' },
+      { name:'腿後勾', sets:3, reps:'10–12', rest:'60–90秒', note:'', key:'腿後側' },
+    ],
+    B: [
+      { name:'深蹲', sets:3, reps:'6–8', rest:'2分', note:'', key:'保主動作' },
+      { name:'腿推', sets:3, reps:'10', rest:'90秒', note:'', key:'安全累積' },
+    ],
+    C: [
+      { name:'腿推', sets:3, reps:'12', rest:'90秒', note:'', key:'低壓力' },
+      { name:'腿後勾', sets:2, reps:'12', rest:'60秒', note:'', key:'簡化' },
+    ]
+  },
+  3: {
+    title: 'Day 3 — 肩＋背＋胸輔助',
+    A: [
+      { name:'肩推', sets:4, reps:'6–10', rest:'2分', note:'肩推沒問題', key:'主動作' },
+      { name:'滑輪下拉', sets:4, reps:'8–12', rest:'90秒', note:'', key:'背部弱項' },
+      { name:'胸靠划船', sets:3, reps:'8–12', rest:'90秒', note:'優先學會', key:'背厚度' },
+      { name:'機械胸推', sets:3, reps:'8–12', rest:'90秒', note:'', key:'胸輔助' },
+      { name:'面拉', sets:3, reps:'12–15', rest:'60秒', note:'保護肩', key:'後三角' },
+    ],
+    B: [
+      { name:'肩推', sets:3, reps:'8', rest:'2分', note:'', key:'保主動作' },
+      { name:'滑輪下拉', sets:3, reps:'10', rest:'90秒', note:'', key:'補背' },
+    ],
+    C: [
+      { name:'機械肩推', sets:3, reps:'10', rest:'90秒', note:'', key:'簡化' },
+      { name:'坐姿划船', sets:2, reps:'12', rest:'60秒', note:'', key:'簡化' },
+    ]
+  },
+  4: {
+    title: 'Day 4 — 全身＋減脂效率',
+    A: [
+      { name:'深蹲', sets:3, reps:'8', rest:'2分', note:'', key:'全身啟動' },
+      { name:'槓鈴臥推', sets:3, reps:'8', rest:'2分', note:'', key:'上肢推' },
+      { name:'滑輪下拉', sets:3, reps:'10', rest:'90秒', note:'', key:'上肢拉' },
+      { name:'啞鈴農夫走路', sets:3, reps:'30m', rest:'60秒', note:'', key:'代謝刺激' },
+      { name:'繩索捲腹', sets:3, reps:'12–15', rest:'60秒', note:'', key:'核心' },
+    ],
+    B: [
+      { name:'深蹲', sets:3, reps:'8', rest:'2分', note:'', key:'保主動作' },
+      { name:'槓鈴臥推', sets:3, reps:'8', rest:'2分', note:'', key:'保推力' },
+      { name:'坐姿划船', sets:3, reps:'10', rest:'90秒', note:'', key:'保拉力' },
+    ],
+    C: [
+      { name:'腿推', sets:3, reps:'12', rest:'90秒', note:'', key:'低壓力' },
+      { name:'機械胸推', sets:3, reps:'12', rest:'90秒', note:'', key:'簡化' },
+      { name:'坐姿划船', sets:2, reps:'12', rest:'60秒', note:'', key:'簡化' },
+    ]
+  }
+};
+
+const QUESTS_WORKOUT = [
+  { id:'no_sugar_drink', icon:'🥤', text:'全天只喝無糖飲料', xp:20 },
+  { id:'workout_done', icon:'💪', text:'完成今日重訓', xp:30 },
+  { id:'protein_3meals', icon:'🍗', text:'三餐都有攝取蛋白質', xp:15 },
+  { id:'half_rice', icon:'🍚', text:'便當選半份飯', xp:10 },
+  { id:'steps_6k', icon:'👟', text:'步數達6000步', xp:15 },
+  { id:'sleep_65', icon:'😴', text:'昨晚睡超過6.5小時', xp:10 },
+];
+
+const QUESTS_REST = [
+  { id:'no_sugar_drink', icon:'🥤', text:'全天只喝無糖飲料', xp:20 },
+  { id:'protein_3meals', icon:'🍗', text:'三餐都有攝取蛋白質', xp:15 },
+  { id:'less_carb', icon:'🌾', text:'澱粉減半 (休息日規則)', xp:15 },
+  { id:'no_late_snack', icon:'🌙', text:'沒有吃宵夜炸物', xp:20 },
+  { id:'steps_6k', icon:'👟', text:'步數達6000步', xp:15 },
+  { id:'sleep_65', icon:'😴', text:'昨晚睡超過6.5小時', xp:10 },
+];
+
+const BONUSES = [
+  { id:'cardio_done', icon:'🏃', text:'完成有氧訓練 (5–15分)', xp:15 },
+  { id:'creatine', icon:'💊', text:'有吃肌酸 (3–5g)', xp:5 },
+  { id:'protein_shake', icon:'🥛', text:'有喝高蛋白', xp:5 },
+  { id:'no_fried_snack', icon:'🚫', text:'完全沒碰炸物宵夜', xp:10 },
+];
+
+const LEVEL_THRESHOLDS = [0,100,250,450,700,1000,1400,1900,2500,3200,4000];
+const LEVEL_NAMES = ['健身新手','初心探索者','意志訓練者','習慣養成者','體能進化者','減脂鬥士','鋼鐵意志','燃脂機器','形體雕刻師','精英戰士','傳說身材'];
+
+const ASSESS_QUESTIONS = [
+  { q:'昨天睡超過 6.5 小時嗎？', hint:'睡眠不足會降低訓練量' },
+  { q:'今天精神還可以嗎？', hint:'不是靠意志硬撐' },
+  { q:'痠痛不影響動作嗎？', hint:'痛感會改動作品質' },
+  { q:'沒有頭痛或壓力爆表嗎？', hint:'避免硬拚' },
+  { q:'沒有強烈抗拒健身房嗎？', hint:'抗拒時做短版' },
+];
+
+// ============================================================
+// STATE
+// ============================================================
+let state = JSON.parse(localStorage.getItem('fitness21_v2') || '{}');
+if (!state.logs) state.logs = {};
+if (!state.totalXP === undefined) state.totalXP = 0;
+if (!state.totalXP) state.totalXP = 0;
+if (!state.gymCount) state.gymCount = 0;
+if (!state.assessAnswers) state.assessAnswers = [null,null,null,null,null];
+
+let currentDay = 1;
+let currentIntensity = 'A';
+let exerciseChecks = {};
+let todayQuests = {};
+let dayType = 'workout';
+
+// ============================================================
+// UTILS
+// ============================================================
+function today() {
+  const d = new Date(); return d.toISOString().split('T')[0];
+}
+function dayNum() {
+  const now = new Date(); now.setHours(0,0,0,0);
+  const diff = Math.floor((now - START_DATE) / 86400000) + 1;
+  return Math.max(1, Math.min(diff, 21));
+}
+function saveState() { localStorage.setItem('fitness21_v2', JSON.stringify(state)); }
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function spawnConfetti() {
+  const colors = ['#e94560','#ffd700','#00d4aa','#4fc3f7','#9c27b0'];
+  for (let i = 0; i < 24; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti';
+    c.style.cssText = `left:${Math.random()*100}%;background:${colors[i%colors.length]};
+      animation-duration:${1+Math.random()}s;animation-delay:${Math.random()*.5}s;
+      transform:rotate(${Math.random()*360}deg)`;
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 2000);
+  }
+}
+
+// ============================================================
+// NAV
+// ============================================================
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'home') updateHome();
+  if (name === 'quest') initQuest();
+  if (name === 'workout') initWorkout();
+  if (name === 'track') updateTracking();
+}
+
+// ============================================================
+// HOME
+// ============================================================
+function updateHome() {
+  const dn = dayNum();
+  const pct = Math.round((dn / TOTAL_DAYS) * 100);
+  document.getElementById('day-count').textContent = dn;
+  document.getElementById('day-pct').textContent = dn + '/21天';
+  document.getElementById('prog-day').textContent = dn;
+  document.getElementById('prog-pct').textContent = pct + '%';
+  document.getElementById('overall-bar').style.width = pct + '%';
+  document.getElementById('today-date-display').textContent = new Date().toLocaleDateString('zh-TW', {year:'numeric',month:'long',day:'numeric',weekday:'long'});
+
+  // XP / Level
+  const xp = state.totalXP || 0;
+  let lv = 0;
+  while (lv < LEVEL_THRESHOLDS.length - 1 && xp >= LEVEL_THRESHOLDS[lv+1]) lv++;
+  const nextXP = LEVEL_THRESHOLDS[Math.min(lv+1, LEVEL_THRESHOLDS.length-1)];
+  const curXP = LEVEL_THRESHOLDS[lv];
+  const pctXP = lv >= LEVEL_NAMES.length-1 ? 100 : Math.round(((xp-curXP)/(nextXP-curXP))*100);
+  document.getElementById('user-level').textContent = lv + 1;
+  document.getElementById('level-title').textContent = LEVEL_NAMES[lv] || '傳說身材';
+  document.getElementById('cur-xp').textContent = xp;
+  document.getElementById('max-xp').textContent = nextXP;
+  document.getElementById('xp-bar').style.width = pctXP + '%';
+
+  // Streak
+  let streak = 0;
+  const td = today();
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const k = d.toISOString().split('T')[0];
+    if (state.logs[k] && state.logs[k].xpEarned > 0) streak++;
+    else break;
+  }
+  document.getElementById('streak-count').textContent = streak;
+
+  // Weight
+  const weights = Object.entries(state.logs)
+    .filter(([,v]) => v.weight)
+    .sort(([a],[b]) => a.localeCompare(b));
+  const lastW = weights.length ? weights[weights.length-1][1].weight : INIT_WEIGHT;
+  const delta = (lastW - INIT_WEIGHT).toFixed(1);
+  document.getElementById('weight-display').textContent = lastW;
+  const wdEl = document.getElementById('weight-delta');
+  if (delta < 0) { wdEl.textContent = delta + ' kg ↓'; wdEl.className = 'stat-delta down'; }
+  else if (delta > 0) { wdEl.textContent = '+' + delta + ' kg ↑'; wdEl.className = 'stat-delta up'; }
+  else { wdEl.textContent = ''; }
+
+  // IB weight update
+  document.getElementById('ib-weight').textContent = lastW + ' kg';
+
+  // Weight goal bar
+  const goalReduction = 2.25; // midpoint of 1.5-3
+  const actualReduction = Math.max(0, INIT_WEIGHT - lastW);
+  const wtPct = Math.min(100, Math.round((actualReduction / goalReduction) * 100));
+  document.getElementById('wt-goal-val').textContent = '-' + actualReduction.toFixed(1) + ' kg';
+  document.getElementById('wt-goal-bar').style.width = wtPct + '%';
+
+  // Quest pct
+  const todayLog = state.logs[td] || {};
+  const questDone = todayLog.questsDone || {};
+  const bonusDone = todayLog.bonusDone || {};
+  const allKeys = [...(todayLog.dayType === 'rest' ? QUESTS_REST : QUESTS_WORKOUT).map(q=>q.id), ...BONUSES.map(b=>b.id)];
+  const doneCount = allKeys.filter(k => questDone[k] || bonusDone[k]).length;
+  const pctQ = Math.round((doneCount / allKeys.length) * 100);
+  document.getElementById('quest-pct-display').textContent = pctQ + '%';
+
+  // Gym count
+  const gymC = state.gymCount || 0;
+  document.getElementById('gym-count').textContent = gymC + '/12';
+  document.getElementById('gym-bar').style.width = Math.min(100, Math.round(gymC/12*100)) + '%';
+
+  // Drink days
+  const drinkDays = Object.values(state.logs).filter(l => l.questsDone && l.questsDone.no_sugar_drink).length;
+  document.getElementById('drink-count').textContent = drinkDays + '/21天';
+  document.getElementById('drink-bar').style.width = Math.min(100, Math.round(drinkDays/21*100)) + '%';
+}
+
+// ============================================================
+// QUEST
+// ============================================================
+function initQuest() {
+  const td = today();
+  const log = state.logs[td] || {};
+  dayType = log.dayType || 'workout';
+  todayQuests = log.questsDone || {};
+  const bonusDone = log.bonusDone || {};
+  document.getElementById('quest-date').textContent = new Date().toLocaleDateString('zh-TW', {month:'long',day:'numeric',weekday:'long'});
+
+  // Set type button
+  document.getElementById('type-workout').classList.toggle('selected', dayType === 'workout');
+  document.getElementById('type-workout').classList.toggle('yes', dayType === 'workout');
+  document.getElementById('type-rest').classList.toggle('selected', dayType === 'rest');
+  document.getElementById('type-rest').classList.toggle('yes', dayType === 'rest');
+
+  renderQuests(bonusDone);
+}
+
+function setDayType(type) {
+  dayType = type;
+  document.getElementById('type-workout').classList.toggle('selected', type === 'workout');
+  document.getElementById('type-workout').classList.toggle('yes', type === 'workout');
+  document.getElementById('type-rest').classList.toggle('selected', type === 'rest');
+  document.getElementById('type-rest').classList.toggle('yes', type === 'rest');
+  const td = today();
+  if (!state.logs[td]) state.logs[td] = {};
+  state.logs[td].dayType = type;
+  saveState();
+  renderQuests(state.logs[td].bonusDone || {});
+}
+
+function renderQuests(bonusDone) {
+  const quests = dayType === 'rest' ? QUESTS_REST : QUESTS_WORKOUT;
+  const container = document.getElementById('quest-list');
+
+  let totalXP = quests.reduce((s,q) => s + (todayQuests[q.id] ? q.xp : 0), 0);
+
+  container.innerHTML = `<div class="card-title">今日任務 <span id="quest-score" style="color:var(--gold)">${totalXP} XP</span></div>`;
+
+  quests.forEach(q => {
+    const done = !!todayQuests[q.id];
+    const row = document.createElement('div');
+    row.className = 'quest-item' + (done ? ' done' : '');
+    row.innerHTML = `
+      <span class="quest-icon">${q.icon}</span>
+      <span class="quest-text">${q.text}</span>
+      <span class="quest-xp">+${q.xp} XP</span>
+      <div class="quest-check">${done ? '✓' : ''}</div>`;
+    row.onclick = () => toggleQuest(q.id, q.xp, quests);
+    container.appendChild(row);
+  });
+
+  // Bonus
+  const bContainer = document.getElementById('bonus-list');
+  bContainer.innerHTML = '';
+  BONUSES.forEach(b => {
+    const done = !!bonusDone[b.id];
+    const row = document.createElement('div');
+    row.className = 'quest-item' + (done ? ' done' : '');
+    row.innerHTML = `
+      <span class="quest-icon">${b.icon}</span>
+      <span class="quest-text">${b.text}</span>
+      <span class="quest-xp">+${b.xp} XP</span>
+      <div class="quest-check">${done ? '✓' : ''}</div>`;
+    row.onclick = () => toggleBonus(b.id, b.xp);
+    bContainer.appendChild(row);
+  });
+}
+
+function toggleQuest(id, xp, quests) {
+  const td = today();
+  if (!state.logs[td]) state.logs[td] = { dayType, questsDone: {}, bonusDone: {} };
+  if (!state.logs[td].questsDone) state.logs[td].questsDone = {};
+
+  const wasOn = !!state.logs[td].questsDone[id];
+  state.logs[td].questsDone[id] = !wasOn;
+  todayQuests = state.logs[td].questsDone;
+
+  if (!wasOn) {
+    state.totalXP = (state.totalXP || 0) + xp;
+    showToast(`+${xp} XP 任務完成！`);
+    if (Math.random() < 0.3) spawnConfetti();
+  } else {
+    state.totalXP = Math.max(0, (state.totalXP || 0) - xp);
+  }
+
+  state.logs[td].xpEarned = Object.keys(state.logs[td].questsDone).filter(k => state.logs[td].questsDone[k]).length > 0 ? 1 : 0;
+  saveState();
+  renderQuests(state.logs[td].bonusDone || {});
+}
+
+function toggleBonus(id, xp) {
+  const td = today();
+  if (!state.logs[td]) state.logs[td] = { dayType, questsDone: {}, bonusDone: {} };
+  if (!state.logs[td].bonusDone) state.logs[td].bonusDone = {};
+
+  const wasOn = !!state.logs[td].bonusDone[id];
+  state.logs[td].bonusDone[id] = !wasOn;
+
+  if (!wasOn) {
+    state.totalXP = (state.totalXP || 0) + xp;
+    showToast(`+${xp} XP 加成！`);
+  } else {
+    state.totalXP = Math.max(0, (state.totalXP || 0) - xp);
+  }
+  saveState();
+  renderQuests(state.logs[td].bonusDone || {});
+}
+
+function saveDailyLog() {
+  const td = today();
+  if (!state.logs[td]) state.logs[td] = { dayType, questsDone: {}, bonusDone: {} };
+
+  const w = parseFloat(document.getElementById('today-weight').value);
+  const s = parseInt(document.getElementById('today-steps').value);
+  const n = document.getElementById('today-note').value;
+
+  if (w && w > 30 && w < 300) {
+    state.logs[td].weight = w;
+    // Auto-check step quest
+    if (s >= 6000 && !state.logs[td].questsDone) state.logs[td].questsDone = {};
+    if (s >= 6000 && !state.logs[td].questsDone.steps_6k) {
+      state.logs[td].questsDone.steps_6k = true;
+      state.totalXP = (state.totalXP || 0) + 15;
+      showToast('步數達標！+15 XP');
+    }
+  }
+  if (s) state.logs[td].steps = s;
+  if (n) state.logs[td].note = n;
+  state.logs[td].xpEarned = 1;
+
+  saveState();
+  showToast('✅ 今日紀錄已儲存！');
+  initQuest();
+}
+
+// ============================================================
+// WORKOUT
+// ============================================================
+function initWorkout() {
+  renderAssessment();
+  renderExercises();
+}
+
+function renderAssessment() {
+  const container = document.getElementById('assess-questions');
+  container.innerHTML = '';
+  ASSESS_QUESTIONS.forEach((q, i) => {
+    const div = document.createElement('div');
+    div.className = 'assess-q';
+    div.innerHTML = `
+      <div class="assess-q-text">${i+1}. ${q.q}</div>
+      <div class="assess-q-hint">${q.hint}</div>
+      <div class="assess-btns">
+        <button class="assess-btn yes ${state.assessAnswers[i]===true?'selected':''}" onclick="setAssess(${i},true)">✅ 是</button>
+        <button class="assess-btn no ${state.assessAnswers[i]===false?'selected':''}" onclick="setAssess(${i},false)">❌ 否</button>
+      </div>`;
+    container.appendChild(div);
+  });
+  updateAssessResult();
+}
+
+function setAssess(i, val) {
+  state.assessAnswers[i] = val;
+  saveState();
+  renderAssessment();
+}
+
+function updateAssessResult() {
+  const answers = state.assessAnswers;
+  const yesCount = answers.filter(a => a === true).length;
+  const answered = answers.filter(a => a !== null).length;
+  const result = document.getElementById('assess-result');
+  const lvDisp = document.getElementById('assess-level-display');
+  const descDisp = document.getElementById('assess-desc');
+
+  if (answered < 3) { result.style.display = 'none'; return; }
+  result.style.display = 'block';
+
+  if (yesCount >= 4) {
+    lvDisp.textContent = 'A 好 💪'; lvDisp.style.color = 'var(--green)';
+    descDisp.textContent = '完整課表，不要每組力竭';
+    currentIntensity = 'A';
+  } else if (yesCount >= 2) {
+    lvDisp.textContent = 'B 普通 👍'; lvDisp.style.color = 'var(--blue)';
+    descDisp.textContent = '縮短版，保留主動作';
+    currentIntensity = 'B';
+  } else {
+    lvDisp.textContent = 'C 疲勞 😴'; lvDisp.style.color = 'var(--orange)';
+    descDisp.textContent = '簡化版，做到不放棄就好';
+    currentIntensity = 'C';
+  }
+
+  // Sync intensity tabs
+  document.querySelectorAll('.int-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.level === currentIntensity);
+  });
+  renderExercises();
+}
+
+function selectDay(d) {
+  currentDay = d;
+  document.querySelectorAll('.day-tab').forEach(t => {
+    t.classList.toggle('active', parseInt(t.dataset.day) === d);
+  });
+  exerciseChecks = {};
+  renderExercises();
+}
+
+function selectIntensity(lvl) {
+  currentIntensity = lvl;
+  document.querySelectorAll('.int-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.level === lvl);
+  });
+  exerciseChecks = {};
+  renderExercises();
+}
+
+function renderExercises() {
+  const container = document.getElementById('exercise-list');
+  const exercises = WORKOUTS[currentDay]?.[currentIntensity] || [];
+  const title = WORKOUTS[currentDay]?.title || '';
+
+  container.innerHTML = `<div class="card-title" style="margin-bottom:16px">${title}</div>`;
+
+  if (!exercises.length) {
+    container.innerHTML += '<div style="color:var(--muted);text-align:center;padding:20px">暫無資料</div>';
+    return;
+  }
+
+  exercises.forEach((ex, i) => {
+    const done = !!exerciseChecks[i];
+    const row = document.createElement('div');
+    row.className = 'exercise-row';
+    row.innerHTML = `
+      <div class="exercise-num" style="${done?'background:var(--green);color:#000':''}">${i+1}</div>
+      <div class="exercise-info">
+        <div class="exercise-name" style="${done?'text-decoration:line-through;color:var(--muted)':''}"> ${ex.name}</div>
+        <div class="exercise-meta">${ex.sets} 組 × ${ex.reps} 次　休息 ${ex.rest}　<span style="color:var(--accent)">${ex.key}</span></div>
+        ${ex.note ? `<div class="exercise-note">💡 ${ex.note}</div>` : ''}
+      </div>
+      <div class="exercise-check ${done?'done':''}" onclick="toggleExercise(${i})">${done?'✓':''}</div>`;
+    container.appendChild(row);
+  });
+
+  const doneCount = Object.values(exerciseChecks).filter(Boolean).length;
+  const prog = document.createElement('div');
+  prog.style.cssText = 'margin-top:12px';
+  prog.innerHTML = `
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px">
+      <span>完成進度</span><span>${doneCount}/${exercises.length}</span>
+    </div>
+    <div class="prog-wrap"><div class="prog-bar green" style="width:${Math.round(doneCount/exercises.length*100)}%"></div></div>`;
+  container.appendChild(prog);
+}
+
+function toggleExercise(i) {
+  exerciseChecks[i] = !exerciseChecks[i];
+  renderExercises();
+}
+
+function finishWorkout() {
+  const exercises = WORKOUTS[currentDay]?.[currentIntensity] || [];
+  const done = Object.values(exerciseChecks).filter(Boolean).length;
+  if (done < exercises.length * 0.5) {
+    showToast('⚠️ 完成至少一半動作才能記錄喔');
+    return;
+  }
+  state.gymCount = (state.gymCount || 0) + 1;
+  state.totalXP = (state.totalXP || 0) + 30;
+
+  const td = today();
+  if (!state.logs[td]) state.logs[td] = { dayType: 'workout', questsDone: {}, bonusDone: {} };
+  state.logs[td].workout = { day: currentDay, intensity: currentIntensity, done: Object.keys(exerciseChecks).filter(k=>exerciseChecks[k]).length };
+  state.logs[td].questsDone = state.logs[td].questsDone || {};
+  state.logs[td].questsDone.workout_done = true;
+  state.logs[td].xpEarned = 1;
+  saveState();
+
+  showToast(`🎉 重訓完成！+30 XP（第${state.gymCount}次）`);
+  spawnConfetti();
+  exerciseChecks = {};
+  renderExercises();
+}
+
+// ============================================================
+// TRACKING
+// ============================================================
+function updateTracking() {
+  const logs = state.logs || {};
+
+  // Weight chart (last 7 days)
+  const chart = document.getElementById('weight-chart');
+  chart.innerHTML = '';
+  const today7 = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    today7.push(d.toISOString().split('T')[0]);
+  }
+
+  const weights7 = today7.map(k => logs[k]?.weight || null);
+  const validW = weights7.filter(Boolean);
+  const minW = validW.length ? Math.min(...validW) - 1 : 80;
+  const maxW = validW.length ? Math.max(...validW) + 1 : 90;
+  const range = maxW - minW || 1;
+
+  today7.forEach((k, i) => {
+    const w = logs[k]?.weight;
+    const bar = document.createElement('div');
+    bar.className = 'chart-bar' + (k === today() ? ' today' : '');
+    const h = w ? Math.max(4, Math.round(((w - minW) / range) * 70)) : 4;
+    bar.style.height = h + 'px';
+    bar.style.opacity = w ? 1 : 0.2;
+    const label = document.createElement('span');
+    label.className = 'chart-label';
+    label.textContent = w ? w : new Date(k).getDate();
+    bar.appendChild(label);
+    chart.appendChild(bar);
+  });
+
+  // History
+  const hist = document.getElementById('history-list');
+  const entries = Object.entries(logs)
+    .filter(([,v]) => v.weight || v.xpEarned)
+    .sort(([a],[b]) => b.localeCompare(a))
+    .slice(0, 14);
+
+  if (!entries.length) {
+    hist.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px;font-size:14px">還沒有記錄<br>從每日任務開始記錄體重吧！</div>';
+    return;
+  }
+
+  hist.innerHTML = '';
+  entries.forEach(([k, v]) => {
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    const questCount = v.questsDone ? Object.values(v.questsDone).filter(Boolean).length : 0;
+    const bonusCount = v.bonusDone ? Object.values(v.bonusDone).filter(Boolean).length : 0;
+    const wd = v.workout ? `<span class="badge blue">Day${v.workout.day} ${v.workout.intensity}</span> ` : '';
+    item.innerHTML = `
+      <div>
+        <div class="history-date">${k} ${wd}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">任務 ${questCount} + 加成 ${bonusCount}${v.note ? ' · ' + v.note : ''}</div>
+      </div>
+      <div class="history-val">${v.weight ? v.weight + ' kg' : '—'}</div>`;
+    hist.appendChild(item);
+  });
+}
+
+// ============================================================
+// INIT
+// ============================================================
+window.addEventListener('DOMContentLoaded', () => {
+  if (!state.assessAnswers || state.assessAnswers.length < 5) state.assessAnswers = [null,null,null,null,null];
+  updateHome();
+  initQuest();
+
+  // Pre-fill today's saved values
+  const td = today();
+  if (state.logs[td]?.weight) document.getElementById('today-weight').value = state.logs[td].weight;
+  if (state.logs[td]?.steps) document.getElementById('today-steps').value = state.logs[td].steps;
+  if (state.logs[td]?.note) document.getElementById('today-note').value = state.logs[td].note;
+});
+</script>
+</body>
+</html>
