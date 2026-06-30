@@ -232,6 +232,9 @@
       <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
       用 Google 帳號登入
     </button>
+    <button onclick="enterGuestMode()" style="display:block;width:100%;padding:14px;border-radius:12px;font-size:15px;font-weight:700;text-align:center;cursor:pointer;border:1px solid var(--border);background:none;color:var(--muted);margin-top:12px;transition:all .2s;">
+      👀 訪客觀看
+    </button>
     <div class="login-note">你的資料只有你能看到</div>
   </div>
 </div>
@@ -558,6 +561,88 @@
   </div>
 </div>
 
+<!-- ====== PAGE: GUEST VIEW ====== -->
+<div class="page" id="page-guest">
+  <div class="page-header">
+    <div style="font-size:28px">👀</div>
+    <div class="page-title">進度觀看</div>
+    <div class="page-sub" id="guest-updated"></div>
+  </div>
+
+  <div class="card" style="text-align:center;padding:20px">
+    <div style="font-size:13px;color:var(--muted);margin-bottom:4px">挑戰者</div>
+    <div style="font-size:22px;font-weight:800;margin-bottom:4px" id="guest-name">—</div>
+    <div class="level-box" style="justify-content:center;margin-top:12px">
+      <div class="level-circle">
+        <span>Lv.</span>
+        <span id="guest-level">1</span>
+      </div>
+      <div class="level-info">
+        <div class="level-name" id="guest-level-name">健身新手</div>
+        <div class="level-xp" id="guest-xp">0 XP</div>
+        <div class="prog-wrap" style="margin-top:6px">
+          <div class="prog-bar accent" id="guest-xp-bar" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stat-grid" style="margin-bottom:14px">
+    <div class="stat-item">
+      <div class="stat-val" style="color:var(--accent)" id="guest-day">1</div>
+      <div class="stat-label">第幾天 / 21</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-val" style="color:var(--gold)" id="guest-streak">0</div>
+      <div class="stat-label">🔥 連續天數</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-val" style="color:var(--green)" id="guest-weight">—</div>
+      <div class="stat-label">目前體重 kg</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-val" style="color:var(--blue)" id="guest-weight-delta">—</div>
+      <div class="stat-label">體重變化 kg</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">21天進度</div>
+    <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
+      <span>Day <span id="guest-prog-day">1</span> / 21</span>
+      <span style="color:var(--gold)" id="guest-prog-pct">0%</span>
+    </div>
+    <div class="prog-wrap" style="height:14px">
+      <div class="prog-bar gold" id="guest-overall-bar" style="width:0%"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">目標達成</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px">
+          <span>重訓次數</span>
+          <span style="color:var(--green)" id="guest-gym">0/12</span>
+        </div>
+        <div class="prog-wrap"><div class="prog-bar green" id="guest-gym-bar" style="width:0%"></div></div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px">
+          <span>無糖飲料達成</span>
+          <span style="color:var(--blue)" id="guest-drink">0/21天</span>
+        </div>
+        <div class="prog-wrap"><div class="prog-bar blue" id="guest-drink-bar" style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:center;padding:16px 0">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">想記錄自己的進度？</div>
+    <button onclick="exitGuestMode()" style="padding:12px 28px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#c1373e);color:white;font-weight:700;font-size:14px;border:none;cursor:pointer;">登入開始挑戰</button>
+  </div>
+</div>
+
 <!-- NAV -->
 <nav class="nav">
   <button class="nav-btn active" onclick="showPage('home',this)">
@@ -793,6 +878,7 @@ async function saveState() {
       freePasses: state.freePasses,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
+    updatePublicSummary();
   } catch (e) {
     console.error('saveState error', e);
   }
@@ -842,6 +928,15 @@ function dayNum() {
   const diff = Math.floor((now - START_DATE) / 86400000) + 1;
   return Math.max(1, Math.min(diff, 21));
 }
+function calcLevel(xp) {
+  let lv = 0;
+  while (lv < LEVEL_THRESHOLDS.length - 1 && xp >= LEVEL_THRESHOLDS[lv+1]) lv++;
+  return lv;
+}
+function calcLevelName(xp) {
+  return LEVEL_NAMES[calcLevel(xp)] || '傳說身材';
+}
+
 function isWeekend() {
   const d = new Date().getDay();
   return d === 0 || d === 6;
@@ -984,6 +1079,106 @@ function spawnConfetti() {
       transform:rotate(${Math.random()*360}deg)`;
     document.body.appendChild(c);
     setTimeout(() => c.remove(), 2000);
+  }
+}
+
+// ============================================================
+// PUBLIC SUMMARY (訪客資料)
+// ============================================================
+async function updatePublicSummary() {
+  if (!currentUser) return;
+  try {
+    const streak = calcStreak();
+    const dn = dayNum();
+    const weights = Object.entries(state.logs)
+      .filter(([,v]) => v.weight)
+      .sort(([a],[b]) => a.localeCompare(b));
+    const lastW = weights.length ? weights[weights.length-1][1].weight : INIT_WEIGHT;
+    const lv = calcLevel(state.totalXP);
+    const nextXP = LEVEL_THRESHOLDS[Math.min(lv+1, LEVEL_THRESHOLDS.length-1)];
+    const curXP = LEVEL_THRESHOLDS[lv];
+    const pctXP = lv >= LEVEL_NAMES.length-1 ? 100 : Math.round(((state.totalXP-curXP)/(nextXP-curXP))*100);
+    const drinkDays = Object.values(state.logs).filter(l => l.questsDone?.no_sugar_drink).length;
+
+    await db.collection('public').doc('summary').set({
+      name: currentUser.displayName || '匿名挑戰者',
+      level: lv + 1,
+      levelName: calcLevelName(state.totalXP),
+      xp: state.totalXP,
+      xpPct: pctXP,
+      nextXP,
+      streak,
+      gymCount: state.gymCount || 0,
+      currentWeight: lastW,
+      weightDelta: parseFloat((lastW - INIT_WEIGHT).toFixed(1)),
+      dayNum: dn,
+      drinkDays,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch(e) { console.error('updatePublicSummary', e); }
+}
+
+// ============================================================
+// GUEST MODE
+// ============================================================
+let isGuestMode = false;
+
+function enterGuestMode() {
+  isGuestMode = true;
+  document.getElementById('login-overlay').classList.add('hidden');
+  document.querySelectorAll('.nav-btn').forEach(b => b.style.display = 'none');
+  document.querySelector('.nav').style.display = 'none';
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-guest').classList.add('active');
+  loadGuestView();
+}
+
+function exitGuestMode() {
+  isGuestMode = false;
+  document.querySelector('.nav').style.display = '';
+  document.querySelectorAll('.nav-btn').forEach(b => b.style.display = '');
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-home').classList.add('active');
+  document.getElementById('login-overlay').classList.remove('hidden');
+}
+
+async function loadGuestView() {
+  try {
+    const doc = await db.collection('public').doc('summary').get();
+    if (!doc.exists) {
+      document.getElementById('guest-name').textContent = '尚無公開資料';
+      return;
+    }
+    const d = doc.data();
+    const dn = d.dayNum || 1;
+    const pct = Math.round((dn / 21) * 100);
+    const delta = d.weightDelta || 0;
+
+    document.getElementById('guest-name').textContent = d.name || '挑戰者';
+    document.getElementById('guest-level').textContent = d.level || 1;
+    document.getElementById('guest-level-name').textContent = d.levelName || '健身新手';
+    document.getElementById('guest-xp').textContent = (d.xp || 0) + ' / ' + (d.nextXP || 100) + ' XP';
+    document.getElementById('guest-xp-bar').style.width = (d.xpPct || 0) + '%';
+    document.getElementById('guest-day').textContent = dn;
+    document.getElementById('guest-streak').textContent = d.streak || 0;
+    document.getElementById('guest-weight').textContent = d.currentWeight || '—';
+    document.getElementById('guest-weight-delta').textContent = (delta > 0 ? '+' : '') + delta;
+    document.getElementById('guest-weight-delta').style.color = delta < 0 ? 'var(--green)' : delta > 0 ? 'var(--accent)' : 'var(--muted)';
+    document.getElementById('guest-prog-day').textContent = dn;
+    document.getElementById('guest-prog-pct').textContent = pct + '%';
+    document.getElementById('guest-overall-bar').style.width = pct + '%';
+    document.getElementById('guest-gym').textContent = (d.gymCount || 0) + '/12';
+    document.getElementById('guest-gym-bar').style.width = Math.min(100, Math.round((d.gymCount||0)/12*100)) + '%';
+    document.getElementById('guest-drink').textContent = (d.drinkDays || 0) + '/21天';
+    document.getElementById('guest-drink-bar').style.width = Math.min(100, Math.round((d.drinkDays||0)/21*100)) + '%';
+
+    if (d.updatedAt) {
+      const t = d.updatedAt.toDate().toLocaleString('zh-TW', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+      document.getElementById('guest-updated').textContent = '最後更新：' + t;
+    }
+  } catch(e) {
+    console.error('loadGuestView', e);
+    document.getElementById('guest-name').textContent = '讀取失敗';
   }
 }
 
