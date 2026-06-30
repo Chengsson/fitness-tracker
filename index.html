@@ -412,34 +412,20 @@
   <div class="page-header">
     <div style="font-size:28px">🏋️</div>
     <div class="page-title">重訓課表</div>
-    <div class="page-sub">每週4次 | A/B/C 動態版本</div>
+    <div class="page-sub">胸三頭 · 背二頭 · 腿 · 肩核心 · 有氧筋膜</div>
   </div>
 
-  <div class="card">
-    <div class="card-title">訓練前自評 (選今日狀態)</div>
-    <div id="assess-questions"></div>
-    <div class="result-box" id="assess-result" style="display:none">
-      <div class="result-level" id="assess-level-display">A 好</div>
-      <div class="result-desc" id="assess-desc">完整課表，不要每組力竭</div>
-    </div>
-  </div>
-
-  <div class="card-title" style="margin:0 0 8px;padding:0 2px">選擇訓練日</div>
+  <div class="card-title" style="margin:0 0 8px;padding:0 2px">選擇今日課表</div>
   <div class="day-tabs" id="day-tabs">
-    <button class="day-tab active" data-day="1" onclick="selectDay(1)">Day 1<br><small>胸＋背</small></button>
-    <button class="day-tab" data-day="2" onclick="selectDay(2)">Day 2<br><small>腿＋臀</small></button>
-    <button class="day-tab" data-day="3" onclick="selectDay(3)">Day 3<br><small>肩＋背</small></button>
-    <button class="day-tab" data-day="4" onclick="selectDay(4)">Day 4<br><small>全身</small></button>
-  </div>
-
-  <div class="intensity-tabs" id="intensity-tabs">
-    <button class="int-tab active" data-level="A" onclick="selectIntensity('A')">A 好<br>完整版</button>
-    <button class="int-tab" data-level="B" onclick="selectIntensity('B')">B 普通<br>縮短版</button>
-    <button class="int-tab" data-level="C" onclick="selectIntensity('C')">C 疲勞<br>簡化版</button>
+    <button class="day-tab active" data-day="1" onclick="selectDay(1)">① 胸<br><small>三頭</small></button>
+    <button class="day-tab" data-day="2" onclick="selectDay(2)">② 背<br><small>二頭</small></button>
+    <button class="day-tab" data-day="3" onclick="selectDay(3)">③ 腿<br><small>深蹲</small></button>
+    <button class="day-tab" data-day="4" onclick="selectDay(4)">④ 肩<br><small>核心</small></button>
+    <button class="day-tab" data-day="5" onclick="selectDay(5)">⑤ 有氧<br><small>筋膜</small></button>
   </div>
 
   <div class="card" id="exercise-list"></div>
-  <button class="btn btn-green" onclick="finishWorkout()">✅ 完成今日訓練 (+30 XP)</button>
+  <button class="btn btn-green" id="finish-btn" onclick="finishWorkout()">✅ 完成今日訓練 (+30 XP)</button>
 </div>
 
 <!-- ====== PAGE: TRACKING ====== -->
@@ -722,77 +708,75 @@ const INIT_WEIGHT = 83.7;
 
 const WORKOUTS = {
   1: {
-    title: 'Day 1 — 胸＋背',
-    A: [
-      { name:'槓鈴臥推', sets:4, reps:'5–8', rest:'2–3分', note:'最擅長項目', key:'主動作' },
-      { name:'坐姿划船', sets:4, reps:'8–12', rest:'90秒', note:'肩胛往後收', key:'補背' },
-      { name:'上斜啞鈴臥推', sets:3, reps:'8–12', rest:'90秒', note:'', key:'胸上部' },
-      { name:'滑輪下拉', sets:3, reps:'10–12', rest:'90秒', note:'不要聳肩', key:'闊背' },
-      { name:'側平舉', sets:3, reps:'12–15', rest:'60秒', note:'輕重量', key:'肩中束' },
-    ],
-    B: [
-      { name:'槓鈴臥推', sets:3, reps:'6–8', rest:'2分', note:'', key:'保主動作' },
-      { name:'坐姿划船', sets:3, reps:'10', rest:'90秒', note:'', key:'保背量' },
-    ],
-    C: [
-      { name:'機械胸推', sets:3, reps:'10', rest:'90秒', note:'', key:'簡化' },
-      { name:'坐姿划船', sets:3, reps:'10', rest:'90秒', note:'', key:'簡化' },
+    title: '① 胸＋三頭',
+    exercises: [
+      { name:'槓鈴臥推', sets:4, reps:'5–8', rest:'2–3分', note:'主動作，不要力竭', key:'胸' },
+      { name:'上斜啞鈴推', sets:3, reps:'10–12', rest:'90秒', note:'', key:'胸上部' },
+      { name:'機械夾胸 / 繩索夾胸', sets:3, reps:'12–15', rest:'60秒', note:'', key:'胸' },
+      { name:'繩索下壓', sets:3, reps:'12–15', rest:'60秒', note:'手肘固定不動', key:'三頭' },
+      { name:'過頭繩索延伸', sets:3, reps:'12–15', rest:'60秒', note:'', key:'三頭長頭' },
     ]
   },
   2: {
-    title: 'Day 2 — 腿＋臀＋核心',
-    A: [
-      { name:'深蹲', sets:4, reps:'5–8', rest:'2–3分', note:'不用硬拚重量', key:'動作品質' },
-      { name:'腿推', sets:3, reps:'10–12', rest:'90秒', note:'', key:'腿量' },
-      { name:'啞鈴RDL', sets:3, reps:'8–10', rest:'90秒', note:'先學髖折疊', key:'髖關節' },
-      { name:'腿後勾', sets:3, reps:'10–12', rest:'60–90秒', note:'', key:'腿後側' },
-    ],
-    B: [
-      { name:'深蹲', sets:3, reps:'6–8', rest:'2分', note:'', key:'保主動作' },
-      { name:'腿推', sets:3, reps:'10', rest:'90秒', note:'', key:'安全累積' },
-    ],
-    C: [
-      { name:'腿推', sets:3, reps:'12', rest:'90秒', note:'', key:'低壓力' },
-      { name:'腿後勾', sets:2, reps:'12', rest:'60秒', note:'', key:'簡化' },
+    title: '② 背＋二頭',
+    exercises: [
+      { name:'滑輪下拉', sets:4, reps:'8–12', rest:'90秒', note:'不要聳肩', key:'闊背' },
+      { name:'坐姿划船', sets:4, reps:'8–12', rest:'90秒', note:'肩胛往後收', key:'背厚度' },
+      { name:'槓鈴彎舉', sets:3, reps:'10–12', rest:'90秒', note:'不要借力', key:'二頭' },
+      { name:'鎚式彎舉', sets:3, reps:'12–15', rest:'60秒', note:'', key:'肱肌' },
     ]
   },
   3: {
-    title: 'Day 3 — 肩＋背＋胸輔助',
-    A: [
-      { name:'肩推', sets:4, reps:'6–10', rest:'2分', note:'肩推沒問題', key:'主動作' },
-      { name:'滑輪下拉', sets:4, reps:'8–12', rest:'90秒', note:'', key:'背部弱項' },
-      { name:'胸靠划船', sets:3, reps:'8–12', rest:'90秒', note:'優先學會', key:'背厚度' },
-      { name:'機械胸推', sets:3, reps:'8–12', rest:'90秒', note:'', key:'胸輔助' },
-      { name:'面拉', sets:3, reps:'12–15', rest:'60秒', note:'保護肩', key:'後三角' },
-    ],
-    B: [
-      { name:'肩推', sets:3, reps:'8', rest:'2分', note:'', key:'保主動作' },
-      { name:'滑輪下拉', sets:3, reps:'10', rest:'90秒', note:'', key:'補背' },
-    ],
-    C: [
-      { name:'機械肩推', sets:3, reps:'10', rest:'90秒', note:'', key:'簡化' },
-      { name:'坐姿划船', sets:2, reps:'12', rest:'60秒', note:'', key:'簡化' },
+    title: '③ 深蹲＋腿部',
+    exercises: [
+      { name:'深蹲', sets:4, reps:'5–8', rest:'2–3分', note:'動作品質優先', key:'主動作' },
+      { name:'腿推', sets:3, reps:'10–12', rest:'90秒', note:'', key:'腿量' },
+      { name:'腿伸展', sets:3, reps:'12–15', rest:'60秒', note:'', key:'股四頭' },
+      { name:'腿後勾', sets:3, reps:'12–15', rest:'60秒', note:'', key:'腿後側' },
     ]
   },
   4: {
-    title: 'Day 4 — 全身＋減脂效率',
-    A: [
-      { name:'深蹲', sets:3, reps:'8', rest:'2分', note:'', key:'全身啟動' },
-      { name:'槓鈴臥推', sets:3, reps:'8', rest:'2分', note:'', key:'上肢推' },
-      { name:'滑輪下拉', sets:3, reps:'10', rest:'90秒', note:'', key:'上肢拉' },
-      { name:'啞鈴農夫走路', sets:3, reps:'30m', rest:'60秒', note:'', key:'代謝刺激' },
-      { name:'繩索捲腹', sets:3, reps:'12–15', rest:'60秒', note:'', key:'核心' },
-    ],
-    B: [
-      { name:'深蹲', sets:3, reps:'8', rest:'2分', note:'', key:'保主動作' },
-      { name:'槓鈴臥推', sets:3, reps:'8', rest:'2分', note:'', key:'保推力' },
-      { name:'坐姿划船', sets:3, reps:'10', rest:'90秒', note:'', key:'保拉力' },
-    ],
-    C: [
-      { name:'腿推', sets:3, reps:'12', rest:'90秒', note:'', key:'低壓力' },
-      { name:'機械胸推', sets:3, reps:'12', rest:'90秒', note:'', key:'簡化' },
-      { name:'坐姿划船', sets:2, reps:'12', rest:'60秒', note:'', key:'簡化' },
+    title: '④ 肩＋核心',
+    exercises: [
+      { name:'肩推', sets:4, reps:'6–10', rest:'2分', note:'', key:'三角肌' },
+      { name:'側平舉', sets:3, reps:'12–15', rest:'60秒', note:'輕重量慢速', key:'肩中束' },
+      { name:'反向飛鳥', sets:3, reps:'12–15', rest:'60秒', note:'', key:'後三角' },
+      { name:'捲腹', sets:3, reps:'15–20', rest:'60秒', note:'', key:'核心' },
+      { name:'死蟲式', sets:3, reps:'10（每側）', rest:'60秒', note:'控制呼吸', key:'深層核心' },
     ]
+  },
+  5: {
+    title: '⑤ 有氧＋筋膜放鬆',
+    isCardio: true,
+    cardio: { name:'跑步機快走', time:'15–20 分', incline:'坡度 4–6%', note:'心率維持中低強度，說話不喘即可' },
+    fasciaGroups: {
+      chest: [
+        { name:'胸肌伸展', duration:'30秒×2', note:'雙手扶門框或固定物，身體緩慢前傾' },
+        { name:'背闊肌滾筒', duration:'60秒', note:'側躺，滾輪壓腋下往腰方向滾動' },
+        { name:'肩後側伸展', duration:'30秒×2（每側）', note:'手臂橫跨胸前，另一手輕壓' },
+        { name:'三頭肌伸展', duration:'30秒×2（每側）', note:'手臂舉高向後彎，另一手輔助' },
+      ],
+      back: [
+        { name:'背闊肌伸展', duration:'30秒×2', note:'抓住固定物，臀部往後下沉' },
+        { name:'胸椎滾筒', duration:'60秒', note:'滾輪放上背，手抱胸，前後緩慢滾動' },
+        { name:'二頭肌伸展', duration:'30秒×2（每側）', note:'手臂伸直向後外旋，感受二頭拉伸' },
+        { name:'肩膀繞環', duration:'10圈×2', note:'肩膀前後各 10 圈大繞環放鬆' },
+      ],
+      legs: [
+        { name:'股四頭滾筒', duration:'60秒（每側）', note:'俯臥，滾輪從膝蓋上方往大腿根部滾' },
+        { name:'腿後側伸展', duration:'30秒×2（每側）', note:'站立單腳前伸，身體緩慢前傾' },
+        { name:'臀部伸展（4字形）', duration:'30秒×2（每側）', note:'躺下，腳踝搭對側膝蓋，拉向胸口' },
+        { name:'小腿滾筒', duration:'60秒（每側）', note:'坐地，小腿放滾輪上前後滾動' },
+        { name:'髖屈肌伸展', duration:'30秒×2（每側）', note:'弓箭步，後腳膝蓋點地，臀部前推' },
+      ],
+      general: [
+        { name:'背部滾筒', duration:'60秒', note:'上背到下背都要滾到' },
+        { name:'股四頭滾筒', duration:'60秒（每側）', note:'' },
+        { name:'胸肌伸展', duration:'30秒×2', note:'雙手扶固定物，身體前傾' },
+        { name:'腿後側伸展', duration:'30秒×2（每側）', note:'' },
+        { name:'肩膀繞環', duration:'10圈×2', note:'前後各 10 圈' },
+      ]
+    }
   }
 };
 
@@ -1434,63 +1418,9 @@ function saveDailyLog() {
 // ============================================================
 // WORKOUT
 // ============================================================
+let fasciaGroup = 'general';
+
 function initWorkout() {
-  renderAssessment();
-  renderExercises();
-}
-
-function renderAssessment() {
-  const container = document.getElementById('assess-questions');
-  container.innerHTML = '';
-  ASSESS_QUESTIONS.forEach((q, i) => {
-    const div = document.createElement('div');
-    div.className = 'assess-q';
-    div.innerHTML = `
-      <div class="assess-q-text">${i+1}. ${q.q}</div>
-      <div class="assess-q-hint">${q.hint}</div>
-      <div class="assess-btns">
-        <button class="assess-btn yes ${state.assessAnswers[i]===true?'selected':''}" onclick="setAssess(${i},true)">✅ 是</button>
-        <button class="assess-btn no ${state.assessAnswers[i]===false?'selected':''}" onclick="setAssess(${i},false)">❌ 否</button>
-      </div>`;
-    container.appendChild(div);
-  });
-  updateAssessResult();
-}
-
-function setAssess(i, val) {
-  state.assessAnswers[i] = val;
-  saveState();
-  renderAssessment();
-}
-
-function updateAssessResult() {
-  const answers = state.assessAnswers;
-  const yesCount = answers.filter(a => a === true).length;
-  const answered = answers.filter(a => a !== null).length;
-  const result = document.getElementById('assess-result');
-  const lvDisp = document.getElementById('assess-level-display');
-  const descDisp = document.getElementById('assess-desc');
-
-  if (answered < 3) { result.style.display = 'none'; return; }
-  result.style.display = 'block';
-
-  if (yesCount >= 4) {
-    lvDisp.textContent = 'A 好 💪'; lvDisp.style.color = 'var(--green)';
-    descDisp.textContent = '完整課表，不要每組力竭';
-    currentIntensity = 'A';
-  } else if (yesCount >= 2) {
-    lvDisp.textContent = 'B 普通 👍'; lvDisp.style.color = 'var(--blue)';
-    descDisp.textContent = '縮短版，保留主動作';
-    currentIntensity = 'B';
-  } else {
-    lvDisp.textContent = 'C 疲勞 😴'; lvDisp.style.color = 'var(--orange)';
-    descDisp.textContent = '簡化版，做到不放棄就好';
-    currentIntensity = 'C';
-  }
-
-  document.querySelectorAll('.int-tab').forEach(t => {
-    t.classList.toggle('active', t.dataset.level === currentIntensity);
-  });
   renderExercises();
 }
 
@@ -1500,28 +1430,25 @@ function selectDay(d) {
     t.classList.toggle('active', parseInt(t.dataset.day) === d);
   });
   exerciseChecks = {};
+  fasciaGroup = 'general';
+  const finishBtn = document.getElementById('finish-btn');
+  finishBtn.textContent = d === 5 ? '✅ 完成有氧＋筋膜 (+20 XP)' : '✅ 完成今日訓練 (+30 XP)';
   renderExercises();
 }
 
-function selectIntensity(lvl) {
-  currentIntensity = lvl;
-  document.querySelectorAll('.int-tab').forEach(t => {
-    t.classList.toggle('active', t.dataset.level === lvl);
-  });
-  exerciseChecks = {};
+function selectFasciaGroup(group) {
+  fasciaGroup = group;
   renderExercises();
 }
 
 function renderExercises() {
-  const container = document.getElementById('exercise-list');
-  const exercises = WORKOUTS[currentDay]?.[currentIntensity] || [];
-  const title = WORKOUTS[currentDay]?.title || '';
-  container.innerHTML = `<div class="card-title" style="margin-bottom:16px">${title}</div>`;
+  if (currentDay === 5) { renderCardioSession(); return; }
 
-  if (!exercises.length) {
-    container.innerHTML += '<div style="color:var(--muted);text-align:center;padding:20px">暫無資料</div>';
-    return;
-  }
+  const container = document.getElementById('exercise-list');
+  const workout = WORKOUTS[currentDay];
+  const exercises = workout?.exercises || [];
+  const title = workout?.title || '';
+  container.innerHTML = `<div class="card-title" style="margin-bottom:16px">${title}</div>`;
 
   exercises.forEach((ex, i) => {
     const done = !!exerciseChecks[i];
@@ -1549,13 +1476,95 @@ function renderExercises() {
   container.appendChild(prog);
 }
 
+function renderCardioSession() {
+  const container = document.getElementById('exercise-list');
+  const w = WORKOUTS[5];
+  const cardioDone = !!exerciseChecks['cardio'];
+  container.innerHTML = `<div class="card-title" style="margin-bottom:16px">${w.title}</div>`;
+
+  // 有氧
+  const cardioRow = document.createElement('div');
+  cardioRow.className = 'exercise-row';
+  cardioRow.innerHTML = `
+    <div class="exercise-num" style="font-size:16px;${cardioDone?'background:var(--green);color:#000':''}">🏃</div>
+    <div class="exercise-info">
+      <div class="exercise-name" style="${cardioDone?'text-decoration:line-through;color:var(--muted)':''}">${w.cardio.name}</div>
+      <div class="exercise-meta">${w.cardio.time}　${w.cardio.incline}</div>
+      <div class="exercise-note">💡 ${w.cardio.note}</div>
+    </div>
+    <div class="exercise-check ${cardioDone?'done':''}" onclick="toggleExercise('cardio')">${cardioDone?'✓':''}</div>`;
+  container.appendChild(cardioRow);
+
+  // 筋膜部位選擇
+  const groupLabels = [['chest','胸肩日後'],['back','背日後'],['legs','腿日後'],['general','通用']];
+  const selector = document.createElement('div');
+  selector.style.cssText = 'margin:16px 0 12px';
+  selector.innerHTML = `<div style="font-size:12px;color:var(--muted);margin-bottom:8px">今天練的是哪個部位？</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">${groupLabels.map(([g,l]) => `
+      <button onclick="selectFasciaGroup('${g}')" style="padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;border:2px solid ${fasciaGroup===g?'var(--green)':'var(--border)'};background:${fasciaGroup===g?'rgba(0,212,170,.15)':'none'};color:${fasciaGroup===g?'var(--green)':'var(--muted)'};">${l}</button>`).join('')}
+    </div>`;
+  container.appendChild(selector);
+
+  // 筋膜動作
+  const divider = document.createElement('div');
+  divider.innerHTML = '<div style="font-size:12px;color:var(--muted);margin-bottom:10px;font-weight:600">🧘 筋膜放鬆</div>';
+  container.appendChild(divider);
+
+  const fascias = w.fasciaGroups[fasciaGroup] || [];
+  fascias.forEach((f, i) => {
+    const key = 'fascia_' + i;
+    const done = !!exerciseChecks[key];
+    const row = document.createElement('div');
+    row.className = 'exercise-row';
+    row.innerHTML = `
+      <div class="exercise-num" style="font-size:14px;${done?'background:var(--green);color:#000':''}">🫧</div>
+      <div class="exercise-info">
+        <div class="exercise-name" style="${done?'text-decoration:line-through;color:var(--muted)':''}">${f.name}</div>
+        <div class="exercise-meta" style="color:var(--blue)">${f.duration}</div>
+        ${f.note ? `<div class="exercise-note">💡 ${f.note}</div>` : ''}
+      </div>
+      <div class="exercise-check ${done?'done':''}" onclick="toggleExercise('${key}')">${done?'✓':''}</div>`;
+    container.appendChild(row);
+  });
+
+  // 進度
+  const totalItems = 1 + fascias.length;
+  const doneCount = (cardioDone ? 1 : 0) + fascias.filter((_,i) => exerciseChecks['fascia_'+i]).length;
+  const prog = document.createElement('div');
+  prog.style.cssText = 'margin-top:12px';
+  prog.innerHTML = `
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px">
+      <span>完成進度</span><span>${doneCount}/${totalItems}</span>
+    </div>
+    <div class="prog-wrap"><div class="prog-bar blue" style="width:${Math.round(doneCount/totalItems*100)}%"></div></div>`;
+  container.appendChild(prog);
+}
+
 function toggleExercise(i) {
   exerciseChecks[i] = !exerciseChecks[i];
   renderExercises();
 }
 
 function finishWorkout() {
-  const exercises = WORKOUTS[currentDay]?.[currentIntensity] || [];
+  const td = today();
+  if (!state.logs[td]) state.logs[td] = { dayType: 'workout', questsDone: {}, bonusDone: {} };
+
+  if (currentDay === 5) {
+    const cardioDone = !!exerciseChecks['cardio'];
+    if (!cardioDone) { showToast('⚠️ 先完成有氧才能記錄喔'); return; }
+    state.totalXP = (state.totalXP || 0) + 20;
+    state.logs[td].questsDone = state.logs[td].questsDone || {};
+    state.logs[td].questsDone.cardio_done = true;
+    state.logs[td].xpEarned = 1;
+    saveState();
+    showToast('🏃 有氧＋筋膜完成！+20 XP');
+    spawnConfetti();
+    exerciseChecks = {};
+    renderExercises();
+    return;
+  }
+
+  const exercises = WORKOUTS[currentDay]?.exercises || [];
   const done = Object.values(exerciseChecks).filter(Boolean).length;
   if (done < exercises.length * 0.5) {
     showToast('⚠️ 完成至少一半動作才能記錄喔');
@@ -1563,15 +1572,11 @@ function finishWorkout() {
   }
   state.gymCount = (state.gymCount || 0) + 1;
   state.totalXP = (state.totalXP || 0) + 30;
-
-  const td = today();
-  if (!state.logs[td]) state.logs[td] = { dayType: 'workout', questsDone: {}, bonusDone: {} };
-  state.logs[td].workout = { day: currentDay, intensity: currentIntensity, done: Object.keys(exerciseChecks).filter(k=>exerciseChecks[k]).length };
+  state.logs[td].workout = { day: currentDay, done };
   state.logs[td].questsDone = state.logs[td].questsDone || {};
   state.logs[td].questsDone.workout_done = true;
   state.logs[td].xpEarned = 1;
   saveState();
-
   showToast(`🎉 重訓完成！+30 XP（第${state.gymCount}次）`);
   spawnConfetti();
   exerciseChecks = {};
