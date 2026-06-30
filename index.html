@@ -1421,6 +1421,18 @@ function saveDailyLog() {
 let fasciaGroup = 'general';
 
 function initWorkout() {
+  const td = today();
+  const log = state.logs[td] || {};
+  // 還原今天選的課表
+  if (log.workoutDay) {
+    currentDay = log.workoutDay;
+    document.querySelectorAll('.day-tab').forEach(t => {
+      t.classList.toggle('active', parseInt(t.dataset.day) === currentDay);
+    });
+  }
+  // 還原今天的勾選狀態
+  exerciseChecks = log.exerciseChecksByDay?.[currentDay] || {};
+  document.getElementById('finish-btn').textContent = currentDay === 5 ? '✅ 完成有氧＋筋膜 (+20 XP)' : '✅ 完成今日訓練 (+30 XP)';
   renderExercises();
 }
 
@@ -1429,10 +1441,15 @@ function selectDay(d) {
   document.querySelectorAll('.day-tab').forEach(t => {
     t.classList.toggle('active', parseInt(t.dataset.day) === d);
   });
-  exerciseChecks = {};
   fasciaGroup = 'general';
-  const finishBtn = document.getElementById('finish-btn');
-  finishBtn.textContent = d === 5 ? '✅ 完成有氧＋筋膜 (+20 XP)' : '✅ 完成今日訓練 (+30 XP)';
+  // 還原這個課表的勾選狀態
+  const td = today();
+  exerciseChecks = state.logs[td]?.exerciseChecksByDay?.[d] || {};
+  // 記住今天選的課表
+  if (!state.logs[td]) state.logs[td] = {};
+  state.logs[td].workoutDay = d;
+  saveState();
+  document.getElementById('finish-btn').textContent = d === 5 ? '✅ 完成有氧＋筋膜 (+20 XP)' : '✅ 完成今日訓練 (+30 XP)';
   renderExercises();
 }
 
@@ -1542,6 +1559,12 @@ function renderCardioSession() {
 
 function toggleExercise(i) {
   exerciseChecks[i] = !exerciseChecks[i];
+  // 儲存打勾狀態到 Firebase
+  const td = today();
+  if (!state.logs[td]) state.logs[td] = {};
+  if (!state.logs[td].exerciseChecksByDay) state.logs[td].exerciseChecksByDay = {};
+  state.logs[td].exerciseChecksByDay[currentDay] = { ...exerciseChecks };
+  saveState();
   renderExercises();
 }
 
