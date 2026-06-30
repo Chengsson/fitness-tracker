@@ -288,6 +288,15 @@
       <div class="stat-val" style="color:var(--blue)" id="quest-pct-display">0%</div>
       <div class="stat-label">今日任務</div>
     </div>
+    <div class="stat-item" style="grid-column:1/-1">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div class="stat-val" style="color:var(--gold);font-size:16px" id="free-pass-display">0 張</div>
+          <div class="stat-label">🃏 免罰卡</div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);text-align:right;line-height:1.6">連續3天達標 → +1張<br>可抵消昨日未達標懲罰</div>
+      </div>
+    </div>
   </div>
 
   <div class="card">
@@ -691,16 +700,16 @@ const WORKOUTS = {
 const QUESTS_WORKOUT = [
   { id:'no_sugar_drink', icon:'🥤', text:'全天只喝無糖飲料', xp:20 },
   { id:'workout_done', icon:'💪', text:'完成今日重訓', xp:30 },
-  { id:'protein_3meals', icon:'🍗', text:'三餐都有攝取蛋白質', xp:15 },
-  { id:'half_rice', icon:'🍚', text:'便當選半份飯', xp:10 },
+  { id:'protein_3meals', icon:'🍗', text:'兩餐都有攝取蛋白質', xp:15 },
+  { id:'half_rice', icon:'🍱', text:'飲食控制（平日：健康餐盒；假日：便當不炸物、飯減半）', xp:10 },
   { id:'steps_6k', icon:'👟', text:'步數達6000步', xp:15 },
   { id:'sleep_65', icon:'😴', text:'昨晚睡超過6.5小時', xp:10 },
 ];
 
 const QUESTS_REST = [
   { id:'no_sugar_drink', icon:'🥤', text:'全天只喝無糖飲料', xp:20 },
-  { id:'protein_3meals', icon:'🍗', text:'三餐都有攝取蛋白質', xp:15 },
-  { id:'less_carb', icon:'🌾', text:'澱粉減半 (休息日規則)', xp:15 },
+  { id:'protein_3meals', icon:'🍗', text:'兩餐都有攝取蛋白質', xp:15 },
+  { id:'less_carb', icon:'🌾', text:'澱粉減半（休息日規則）', xp:15 },
   { id:'no_late_snack', icon:'🌙', text:'沒有吃宵夜炸物', xp:20 },
   { id:'steps_6k', icon:'👟', text:'步數達6000步', xp:15 },
   { id:'sleep_65', icon:'😴', text:'昨晚睡超過6.5小時', xp:10 },
@@ -727,7 +736,7 @@ const ASSESS_QUESTIONS = [
 // ============================================================
 // STATE
 // ============================================================
-let state = { logs: {}, totalXP: 0, gymCount: 0, assessAnswers: [null,null,null,null,null] };
+let state = { logs: {}, totalXP: 0, gymCount: 0, assessAnswers: [null,null,null,null,null], streakMilestones: [], weeklyRewards: {}, freePasses: 0 };
 let currentDay = 1;
 let currentIntensity = 'A';
 let exerciseChecks = {};
@@ -748,6 +757,9 @@ async function loadState() {
       state.totalXP = data.totalXP || 0;
       state.gymCount = data.gymCount || 0;
       state.assessAnswers = data.assessAnswers || [null,null,null,null,null];
+      state.streakMilestones = data.streakMilestones || [];
+      state.weeklyRewards = data.weeklyRewards || {};
+      state.freePasses = data.freePasses || 0;
     }
   } catch (e) {
     console.error('loadState error', e);
@@ -762,6 +774,9 @@ async function saveState() {
       totalXP: state.totalXP,
       gymCount: state.gymCount,
       assessAnswers: state.assessAnswers,
+      streakMilestones: state.streakMilestones,
+      weeklyRewards: state.weeklyRewards,
+      freePasses: state.freePasses,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
   } catch (e) {
@@ -812,6 +827,130 @@ function dayNum() {
   const now = new Date(); now.setHours(0,0,0,0);
   const diff = Math.floor((now - START_DATE) / 86400000) + 1;
   return Math.max(1, Math.min(diff, 21));
+}
+function isWeekend() {
+  const d = new Date().getDay();
+  return d === 0 || d === 6;
+}
+
+// 計算某天的任務完成率
+function getDayCompletionRate(dateKey) {
+  const log = state.logs[dateKey];
+  if (!log || Object.keys(log).length === 0) return null;
+  const quests = (log.dayType === 'rest') ? QUESTS_REST : QUESTS_WORKOUT;
+  const done = quests.filter(q => log.questsDone?.[q.id]).length;
+  return done / quests.length;
+}
+
+// 計算當前連續天數
+function calcStreak() {
+  let streak = 0;
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const k = d.toISOString().split('T')[0];
+    if (state.logs[k] && state.logs[k].xpEarned > 0) streak++;
+    else break;
+  }
+  return streak;
+}
+
+// 連續達標里程碑獎勵
+function checkStreakMilestones() {
+  const streak = calcStreak();
+  const milestones = [
+    { days:3,  xp:0,   passes:1, msg:'🎉 連續3天！獲得免罰卡 x1' },
+    { days:7,  xp:50,  passes:0, msg:'🏆 連續7天！+50 XP' },
+    { days:14, xp:100, passes:0, msg:'💎 連續14天！+100 XP ＋彈性飲食日解鎖' },
+    { days:21, xp:200, passes:0, msg:'👑 完成21天！+200 XP ＋傳說減脂者稱號' },
+  ];
+  let changed = false;
+  milestones.forEach(m => {
+    if (streak >= m.days && !state.streakMilestones.includes(m.days)) {
+      state.streakMilestones.push(m.days);
+      state.totalXP = (state.totalXP || 0) + m.xp;
+      state.freePasses = (state.freePasses || 0) + m.passes;
+      showToast(m.msg);
+      spawnConfetti();
+      changed = true;
+    }
+  });
+  if (changed) saveState();
+}
+
+// 週目標獎勵（每週一檢查上週）
+function checkWeeklyReward() {
+  const now = new Date();
+  if (now.getDay() !== 1) return; // 只在週一執行
+  const weekKey = today();
+  if (state.weeklyRewards[weekKey]) return;
+
+  let gymCount = 0, totalTasks = 0, doneTasks = 0;
+  for (let i = 1; i <= 7; i++) {
+    const d = new Date(now); d.setDate(d.getDate() - i);
+    const k = d.toISOString().split('T')[0];
+    const log = state.logs[k];
+    if (!log) continue;
+    if (log.workout) gymCount++;
+    const qs = (log.dayType === 'rest') ? QUESTS_REST : QUESTS_WORKOUT;
+    totalTasks += qs.length;
+    doneTasks += qs.filter(q => log.questsDone?.[q.id]).length;
+  }
+
+  const rate = totalTasks > 0 ? doneTasks / totalTasks : 0;
+  let bonusXP = 0, rewards = [];
+  if (gymCount >= 4) { bonusXP += 30; rewards.push('重訓4次 +30 XP'); }
+  if (rate >= 0.8)   { bonusXP += 20; rewards.push('任務80%達成 +20 XP'); }
+
+  state.weeklyRewards[weekKey] = true;
+  if (bonusXP > 0) {
+    state.totalXP = (state.totalXP || 0) + bonusXP;
+    showToast('🏅 週目標：' + rewards.join('、'));
+    spawnConfetti();
+  }
+  saveState();
+}
+
+// 昨日完成率 < 60% 則設定今日懲罰
+function checkAndSetPunishment() {
+  const td = today();
+  if (state.logs[td]?.punishmentChecked) return; // 今天已檢查過
+
+  const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+  const yk = yesterday.toISOString().split('T')[0];
+  const rate = getDayCompletionRate(yk);
+
+  if (!state.logs[td]) state.logs[td] = {};
+  state.logs[td].punishmentChecked = true;
+
+  if (rate !== null && rate < 0.6) {
+    state.logs[td].punishmentRequired = true;
+    state.logs[td].punishmentDone = false;
+    saveState();
+  }
+}
+
+function completePunishmentTask() {
+  const td = today();
+  if (!state.logs[td]) return;
+  state.logs[td].punishmentDone = true;
+  state.totalXP = (state.totalXP || 0) + 10;
+  showToast('💪 懲罰完成！有氧20分鐘 +10 XP');
+  spawnConfetti();
+  saveState();
+  renderQuests(state.logs[td].bonusDone || {});
+}
+
+function useFreePass() {
+  if (state.freePasses <= 0) return;
+  const td = today();
+  state.freePasses--;
+  if (state.logs[td]) {
+    state.logs[td].punishmentRequired = false;
+    state.logs[td].punishmentDone = true;
+  }
+  showToast('🃏 免罰卡已使用！剩餘 ' + state.freePasses + ' 張');
+  saveState();
+  renderQuests(state.logs[td]?.bonusDone || {});
 }
 
 function showToast(msg) {
@@ -917,6 +1056,8 @@ function updateHome() {
   const drinkDays = Object.values(state.logs).filter(l => l.questsDone && l.questsDone.no_sugar_drink).length;
   document.getElementById('drink-count').textContent = drinkDays + '/21天';
   document.getElementById('drink-bar').style.width = Math.min(100, Math.round(drinkDays/21*100)) + '%';
+
+  document.getElementById('free-pass-display').textContent = (state.freePasses || 0) + ' 張';
 }
 
 // ============================================================
@@ -924,6 +1065,10 @@ function updateHome() {
 // ============================================================
 function initQuest() {
   const td = today();
+  checkAndSetPunishment();
+  checkStreakMilestones();
+  checkWeeklyReward();
+
   const log = state.logs[td] || {};
   dayType = log.dayType || 'workout';
   todayQuests = log.questsDone || {};
@@ -956,6 +1101,31 @@ function renderQuests(bonusDone) {
   const container = document.getElementById('quest-list');
   let totalXP = quests.reduce((s,q) => s + (todayQuests[q.id] ? q.xp : 0), 0);
   container.innerHTML = `<div class="card-title">今日任務 <span id="quest-score" style="color:var(--gold)">${totalXP} XP</span></div>`;
+
+  // 懲罰任務（昨日完成率 < 60%）
+  const td = today();
+  const log = state.logs[td] || {};
+  if (log.punishmentRequired && !log.punishmentDone) {
+    const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+    const yk = yesterday.toISOString().split('T')[0];
+    const rate = getDayCompletionRate(yk);
+    const pct = rate !== null ? Math.round(rate * 100) : 0;
+    const punishDiv = document.createElement('div');
+    punishDiv.style.cssText = 'background:rgba(233,69,96,.12);border:1px solid rgba(233,69,96,.4);border-radius:12px;padding:12px;margin-bottom:12px;';
+    punishDiv.innerHTML = `
+      <div style="color:var(--accent);font-weight:700;font-size:13px;margin-bottom:6px">⚠️ 昨日任務完成率 ${pct}%（未達60%）</div>
+      <div style="font-size:13px;margin-bottom:10px">懲罰任務：完成有氧 20 分鐘</div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="completePunishmentTask()" style="flex:1;padding:9px;border-radius:10px;background:var(--accent);border:none;color:white;font-weight:700;font-size:13px;cursor:pointer;">✅ 已完成有氧20分</button>
+        ${state.freePasses > 0 ? `<button onclick="useFreePass()" style="flex:1;padding:9px;border-radius:10px;background:rgba(255,215,0,.15);border:1px solid rgba(255,215,0,.4);color:var(--gold);font-weight:700;font-size:13px;cursor:pointer;">🃏 使用免罰卡（剩${state.freePasses}張）</button>` : ''}
+      </div>`;
+    container.appendChild(punishDiv);
+  } else if (log.punishmentRequired && log.punishmentDone) {
+    const doneDiv = document.createElement('div');
+    doneDiv.style.cssText = 'background:rgba(0,212,170,.08);border:1px solid rgba(0,212,170,.3);border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:13px;color:var(--green);';
+    doneDiv.textContent = '✅ 懲罰任務已完成';
+    container.appendChild(doneDiv);
+  }
 
   quests.forEach(q => {
     const done = !!todayQuests[q.id];
