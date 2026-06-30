@@ -603,9 +603,25 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
+// 處理 redirect 登入回傳
+auth.getRedirectResult().catch(err => {
+  if (err.code && err.code !== 'auth/no-auth-event') {
+    showToast('登入失敗：' + err.code);
+  }
+});
+
 function signInWithGoogle() {
   const provider = new firebase.auth.GoogleAuthProvider();
-  auth.signInWithRedirect(provider);
+  // 嘗試 popup，失敗（iPhone Safari）則改用 redirect
+  auth.signInWithPopup(provider).catch(err => {
+    if (err.code === 'auth/popup-blocked' ||
+        err.code === 'auth/operation-not-supported-in-this-environment') {
+      auth.signInWithRedirect(provider);
+    } else if (err.code !== 'auth/cancelled-popup-request' &&
+               err.code !== 'auth/popup-closed-by-user') {
+      showToast('登入失敗：' + err.code);
+    }
+  });
 }
 
 function signOutUser() {
