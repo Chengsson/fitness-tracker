@@ -22,6 +22,38 @@
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   body { background: var(--bg); color: var(--text); font-family: -apple-system, 'Noto Sans TC', sans-serif; min-height: 100vh; }
 
+  /* LOGIN OVERLAY */
+  #login-overlay {
+    position: fixed; inset: 0; background: var(--bg); z-index: 9999;
+    display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 24px;
+    padding: 24px;
+  }
+  #login-overlay.hidden { display: none; }
+  .login-box { text-align: center; max-width: 320px; width: 100%; }
+  .login-icon { font-size: 56px; margin-bottom: 16px; }
+  .login-title { font-size: 22px; font-weight: 800; margin-bottom: 8px; }
+  .login-sub { font-size: 13px; color: var(--muted); margin-bottom: 32px; line-height: 1.6; }
+  .btn-google {
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    width: 100%; padding: 14px 20px; border-radius: 12px;
+    background: white; color: #333; font-size: 15px; font-weight: 700;
+    border: none; cursor: pointer; transition: all .2s;
+  }
+  .btn-google:active { transform: scale(.97); }
+  .btn-google img { width: 22px; height: 22px; }
+  .login-note { font-size: 11px; color: var(--muted); margin-top: 16px; }
+
+  /* USER BAR */
+  #user-bar {
+    display: none; position: fixed; top: 0; left: 0; right: 0;
+    background: #111122; border-bottom: 1px solid var(--border);
+    padding: 8px 16px; z-index: 100;
+    align-items: center; justify-content: space-between;
+  }
+  #user-bar.visible { display: flex; }
+  .user-name { font-size: 12px; color: var(--muted); }
+  .btn-logout { font-size: 11px; color: var(--accent); background: none; border: 1px solid rgba(233,69,96,.3); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+
   /* NAV */
   .nav { position: fixed; bottom: 0; left: 0; right: 0; background: #111122; border-top: 1px solid var(--border); display: flex; z-index: 100; }
   .nav-btn { flex: 1; padding: 10px 4px 14px; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10px; color: var(--muted); cursor: pointer; border: none; background: none; transition: color .2s; }
@@ -29,7 +61,7 @@
   .nav-btn svg { width: 22px; height: 22px; }
 
   /* PAGES */
-  .page { display: none; padding: 16px 14px 90px; max-width: 480px; margin: 0 auto; }
+  .page { display: none; padding: 52px 14px 90px; max-width: 480px; margin: 0 auto; }
   .page.active { display: block; }
 
   /* HEADER */
@@ -169,17 +201,46 @@
   .week-cell.cardio { background: rgba(79,195,247,.1); color: var(--blue); border: 1px solid rgba(79,195,247,.2); }
   .week-cell.today-cell { border: 2px solid var(--gold) !important; }
 
-  /* SCROLL HINT */
-  .scroll-hint { text-align: center; font-size: 11px; color: var(--muted); padding: 8px 0; }
-
   /* HISTORY LIST */
   .history-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
   .history-item:last-child { border-bottom: none; }
   .history-date { font-size: 13px; color: var(--muted); }
   .history-val { font-size: 15px; font-weight: 700; }
+
+  /* LOADING */
+  #app-loading { position: fixed; inset: 0; background: var(--bg); z-index: 8888; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 16px; }
+  #app-loading.hidden { display: none; }
+  .spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
+
+<!-- LOADING -->
+<div id="app-loading">
+  <div class="spinner"></div>
+  <div style="font-size:13px;color:var(--muted)">載入中...</div>
+</div>
+
+<!-- LOGIN OVERLAY -->
+<div id="login-overlay" class="hidden">
+  <div class="login-box">
+    <div class="login-icon">⚔️</div>
+    <div class="login-title">21天減脂任務系統</div>
+    <div class="login-sub">登入後資料會自動同步<br>手機電腦都能看到同樣進度</div>
+    <button class="btn-google" onclick="signInWithGoogle()">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+      用 Google 帳號登入
+    </button>
+    <div class="login-note">你的資料只有你能看到</div>
+  </div>
+</div>
+
+<!-- USER BAR -->
+<div id="user-bar">
+  <span class="user-name" id="user-name-display"></span>
+  <button class="btn-logout" onclick="signOutUser()">登出</button>
+</div>
 
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
@@ -192,7 +253,6 @@
     <div class="page-sub" id="today-date-display"></div>
   </div>
 
-  <!-- LEVEL -->
   <div class="card">
     <div class="level-box">
       <div class="level-circle">
@@ -209,7 +269,6 @@
     </div>
   </div>
 
-  <!-- STATS -->
   <div class="stat-grid" style="margin-bottom:14px">
     <div class="stat-item">
       <div class="stat-val" style="color:var(--accent)" id="day-count">1</div>
@@ -231,7 +290,6 @@
     </div>
   </div>
 
-  <!-- 21 day progress -->
   <div class="card">
     <div class="card-title">21天進度</div>
     <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
@@ -246,7 +304,6 @@
     </div>
   </div>
 
-  <!-- GOALS -->
   <div class="card">
     <div class="card-title">21天目標</div>
     <div style="display:flex;flex-direction:column;gap:10px">
@@ -274,7 +331,6 @@
     </div>
   </div>
 
-  <!-- InBody -->
   <div class="card">
     <div class="card-title">InBody 基準值</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">
@@ -298,7 +354,6 @@
     <div class="page-sub" id="quest-date"></div>
   </div>
 
-  <!-- TODAY TYPE -->
   <div class="card" style="text-align:center;padding:12px">
     <div style="font-size:13px;color:var(--muted);margin-bottom:8px">今日狀態</div>
     <div style="display:flex;gap:8px;justify-content:center">
@@ -307,18 +362,15 @@
     </div>
   </div>
 
-  <!-- QUESTS -->
   <div class="card" id="quest-list">
     <div class="card-title">今日任務 <span id="quest-score" style="color:var(--gold)">0 XP</span></div>
   </div>
 
-  <!-- BONUS -->
   <div class="card">
     <div class="card-title">額外加成</div>
     <div id="bonus-list"></div>
   </div>
 
-  <!-- NOTES -->
   <div class="card">
     <div class="card-title">今日紀錄</div>
     <div class="input-group">
@@ -351,7 +403,6 @@
     <div class="page-sub">每週4次 | A/B/C 動態版本</div>
   </div>
 
-  <!-- ASSESSMENT -->
   <div class="card">
     <div class="card-title">訓練前自評 (選今日狀態)</div>
     <div id="assess-questions"></div>
@@ -361,7 +412,6 @@
     </div>
   </div>
 
-  <!-- DAY SELECTOR -->
   <div class="card-title" style="margin:0 0 8px;padding:0 2px">選擇訓練日</div>
   <div class="day-tabs" id="day-tabs">
     <button class="day-tab active" data-day="1" onclick="selectDay(1)">Day 1<br><small>胸＋背</small></button>
@@ -376,10 +426,7 @@
     <button class="int-tab" data-level="C" onclick="selectIntensity('C')">C 疲勞<br>簡化版</button>
   </div>
 
-  <div class="card" id="exercise-list">
-    <!-- filled by JS -->
-  </div>
-
+  <div class="card" id="exercise-list"></div>
   <button class="btn btn-green" onclick="finishWorkout()">✅ 完成今日訓練 (+30 XP)</button>
 </div>
 
@@ -391,14 +438,12 @@
     <div class="page-sub">每天一次，早上空腹量</div>
   </div>
 
-  <!-- WEIGHT CHART -->
   <div class="card">
     <div class="card-title">體重趨勢 (最近7天)</div>
     <div class="mini-chart" id="weight-chart"></div>
     <div style="height:24px"></div>
   </div>
 
-  <!-- HISTORY -->
   <div class="card">
     <div class="card-title">記錄歷史</div>
     <div id="history-list">
@@ -406,7 +451,6 @@
     </div>
   </div>
 
-  <!-- CARDIO PLAN -->
   <div class="card">
     <div class="card-title">有氧計畫 (跑步機)</div>
     <div style="overflow-x:auto">
@@ -423,7 +467,6 @@
     </div>
   </div>
 
-  <!-- WEEKLY REVIEW -->
   <div class="card">
     <div class="card-title">每週自評結果對照</div>
     <table class="food-table">
@@ -444,7 +487,6 @@
     <div class="page-sub">份量法 · 台灣外食版</div>
   </div>
 
-  <!-- DAILY PORTIONS -->
   <div class="card">
     <div class="card-title">每日份量標準</div>
     <div style="overflow-x:auto">
@@ -461,7 +503,6 @@
     </div>
   </div>
 
-  <!-- FORBIDDEN -->
   <div class="card">
     <div class="card-title">⛔ 21天禁區</div>
     <div style="display:flex;flex-direction:column;gap:8px">
@@ -480,7 +521,6 @@
     </div>
   </div>
 
-  <!-- BENTO GUIDE -->
   <div class="card">
     <div class="card-title">便當點法</div>
     <div style="overflow-x:auto">
@@ -495,7 +535,6 @@
     </div>
   </div>
 
-  <!-- SNACK LIST -->
   <div class="card">
     <div class="card-title">宵夜替代清單</div>
     <table class="food-table">
@@ -534,7 +573,38 @@
   </button>
 </nav>
 
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
 <script>
+// ============================================================
+// FIREBASE INIT
+// ============================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyBaNH7tbwOKsC1QHJPvYYlyXIx0sMf1n9E",
+  authDomain: "fitness-81890.firebaseapp.com",
+  projectId: "fitness-81890",
+  storageBucket: "fitness-81890.firebasestorage.app",
+  messagingSenderId: "601781786012",
+  appId: "1:601781786012:web:b39de2d89f5090d5c42459"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+function signInWithGoogle() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider).catch(err => {
+    showToast('登入失敗：' + err.message);
+  });
+}
+
+function signOutUser() {
+  auth.signOut();
+}
+
 // ============================================================
 // DATA
 // ============================================================
@@ -657,31 +727,92 @@ const ASSESS_QUESTIONS = [
 // ============================================================
 // STATE
 // ============================================================
-let state = JSON.parse(localStorage.getItem('fitness21_v2') || '{}');
-if (!state.logs) state.logs = {};
-if (!state.totalXP === undefined) state.totalXP = 0;
-if (!state.totalXP) state.totalXP = 0;
-if (!state.gymCount) state.gymCount = 0;
-if (!state.assessAnswers) state.assessAnswers = [null,null,null,null,null];
-
+let state = { logs: {}, totalXP: 0, gymCount: 0, assessAnswers: [null,null,null,null,null] };
 let currentDay = 1;
 let currentIntensity = 'A';
 let exerciseChecks = {};
 let todayQuests = {};
 let dayType = 'workout';
+let currentUser = null;
+
+// ============================================================
+// FIRESTORE
+// ============================================================
+async function loadState() {
+  if (!currentUser) return;
+  try {
+    const doc = await db.collection('users').doc(currentUser.uid).get();
+    if (doc.exists) {
+      const data = doc.data();
+      state.logs = data.logs || {};
+      state.totalXP = data.totalXP || 0;
+      state.gymCount = data.gymCount || 0;
+      state.assessAnswers = data.assessAnswers || [null,null,null,null,null];
+    }
+  } catch (e) {
+    console.error('loadState error', e);
+  }
+}
+
+async function saveState() {
+  if (!currentUser) return;
+  try {
+    await db.collection('users').doc(currentUser.uid).set({
+      logs: state.logs,
+      totalXP: state.totalXP,
+      gymCount: state.gymCount,
+      assessAnswers: state.assessAnswers,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch (e) {
+    console.error('saveState error', e);
+  }
+}
+
+// ============================================================
+// AUTH STATE
+// ============================================================
+auth.onAuthStateChanged(async (user) => {
+  const loading = document.getElementById('app-loading');
+  const loginOverlay = document.getElementById('login-overlay');
+  const userBar = document.getElementById('user-bar');
+  const userNameDisplay = document.getElementById('user-name-display');
+
+  if (user) {
+    currentUser = user;
+    userNameDisplay.textContent = user.displayName || user.email;
+    userBar.classList.add('visible');
+    loginOverlay.classList.add('hidden');
+
+    await loadState();
+
+    loading.classList.add('hidden');
+    updateHome();
+    initQuest();
+    const td = today();
+    if (state.logs[td]?.weight) document.getElementById('today-weight').value = state.logs[td].weight;
+    if (state.logs[td]?.steps) document.getElementById('today-steps').value = state.logs[td].steps;
+    if (state.logs[td]?.note) document.getElementById('today-note').value = state.logs[td].note;
+  } else {
+    currentUser = null;
+    state = { logs: {}, totalXP: 0, gymCount: 0, assessAnswers: [null,null,null,null,null] };
+    userBar.classList.remove('visible');
+    loading.classList.add('hidden');
+    loginOverlay.classList.remove('hidden');
+  }
+});
 
 // ============================================================
 // UTILS
 // ============================================================
 function today() {
-  const d = new Date(); return d.toISOString().split('T')[0];
+  return new Date().toISOString().split('T')[0];
 }
 function dayNum() {
   const now = new Date(); now.setHours(0,0,0,0);
   const diff = Math.floor((now - START_DATE) / 86400000) + 1;
   return Math.max(1, Math.min(diff, 21));
 }
-function saveState() { localStorage.setItem('fitness21_v2', JSON.stringify(state)); }
 
 function showToast(msg) {
   const t = document.getElementById('toast');
@@ -730,7 +861,6 @@ function updateHome() {
   document.getElementById('overall-bar').style.width = pct + '%';
   document.getElementById('today-date-display').textContent = new Date().toLocaleDateString('zh-TW', {year:'numeric',month:'long',day:'numeric',weekday:'long'});
 
-  // XP / Level
   const xp = state.totalXP || 0;
   let lv = 0;
   while (lv < LEVEL_THRESHOLDS.length - 1 && xp >= LEVEL_THRESHOLDS[lv+1]) lv++;
@@ -743,9 +873,7 @@ function updateHome() {
   document.getElementById('max-xp').textContent = nextXP;
   document.getElementById('xp-bar').style.width = pctXP + '%';
 
-  // Streak
   let streak = 0;
-  const td = today();
   for (let i = 0; i < 30; i++) {
     const d = new Date(); d.setDate(d.getDate() - i);
     const k = d.toISOString().split('T')[0];
@@ -754,7 +882,6 @@ function updateHome() {
   }
   document.getElementById('streak-count').textContent = streak;
 
-  // Weight
   const weights = Object.entries(state.logs)
     .filter(([,v]) => v.weight)
     .sort(([a],[b]) => a.localeCompare(b));
@@ -766,17 +893,15 @@ function updateHome() {
   else if (delta > 0) { wdEl.textContent = '+' + delta + ' kg ↑'; wdEl.className = 'stat-delta up'; }
   else { wdEl.textContent = ''; }
 
-  // IB weight update
   document.getElementById('ib-weight').textContent = lastW + ' kg';
 
-  // Weight goal bar
-  const goalReduction = 2.25; // midpoint of 1.5-3
+  const goalReduction = 2.25;
   const actualReduction = Math.max(0, INIT_WEIGHT - lastW);
   const wtPct = Math.min(100, Math.round((actualReduction / goalReduction) * 100));
   document.getElementById('wt-goal-val').textContent = '-' + actualReduction.toFixed(1) + ' kg';
   document.getElementById('wt-goal-bar').style.width = wtPct + '%';
 
-  // Quest pct
+  const td = today();
   const todayLog = state.logs[td] || {};
   const questDone = todayLog.questsDone || {};
   const bonusDone = todayLog.bonusDone || {};
@@ -785,12 +910,10 @@ function updateHome() {
   const pctQ = Math.round((doneCount / allKeys.length) * 100);
   document.getElementById('quest-pct-display').textContent = pctQ + '%';
 
-  // Gym count
   const gymC = state.gymCount || 0;
   document.getElementById('gym-count').textContent = gymC + '/12';
   document.getElementById('gym-bar').style.width = Math.min(100, Math.round(gymC/12*100)) + '%';
 
-  // Drink days
   const drinkDays = Object.values(state.logs).filter(l => l.questsDone && l.questsDone.no_sugar_drink).length;
   document.getElementById('drink-count').textContent = drinkDays + '/21天';
   document.getElementById('drink-bar').style.width = Math.min(100, Math.round(drinkDays/21*100)) + '%';
@@ -807,7 +930,6 @@ function initQuest() {
   const bonusDone = log.bonusDone || {};
   document.getElementById('quest-date').textContent = new Date().toLocaleDateString('zh-TW', {month:'long',day:'numeric',weekday:'long'});
 
-  // Set type button
   document.getElementById('type-workout').classList.toggle('selected', dayType === 'workout');
   document.getElementById('type-workout').classList.toggle('yes', dayType === 'workout');
   document.getElementById('type-rest').classList.toggle('selected', dayType === 'rest');
@@ -832,9 +954,7 @@ function setDayType(type) {
 function renderQuests(bonusDone) {
   const quests = dayType === 'rest' ? QUESTS_REST : QUESTS_WORKOUT;
   const container = document.getElementById('quest-list');
-
   let totalXP = quests.reduce((s,q) => s + (todayQuests[q.id] ? q.xp : 0), 0);
-
   container.innerHTML = `<div class="card-title">今日任務 <span id="quest-score" style="color:var(--gold)">${totalXP} XP</span></div>`;
 
   quests.forEach(q => {
@@ -850,7 +970,6 @@ function renderQuests(bonusDone) {
     container.appendChild(row);
   });
 
-  // Bonus
   const bContainer = document.getElementById('bonus-list');
   bContainer.innerHTML = '';
   BONUSES.forEach(b => {
@@ -884,7 +1003,7 @@ function toggleQuest(id, xp, quests) {
     state.totalXP = Math.max(0, (state.totalXP || 0) - xp);
   }
 
-  state.logs[td].xpEarned = Object.keys(state.logs[td].questsDone).filter(k => state.logs[td].questsDone[k]).length > 0 ? 1 : 0;
+  state.logs[td].xpEarned = Object.values(state.logs[td].questsDone).some(Boolean) ? 1 : 0;
   saveState();
   renderQuests(state.logs[td].bonusDone || {});
 }
@@ -917,7 +1036,6 @@ function saveDailyLog() {
 
   if (w && w > 30 && w < 300) {
     state.logs[td].weight = w;
-    // Auto-check step quest
     if (s >= 6000 && !state.logs[td].questsDone) state.logs[td].questsDone = {};
     if (s >= 6000 && !state.logs[td].questsDone.steps_6k) {
       state.logs[td].questsDone.steps_6k = true;
@@ -991,7 +1109,6 @@ function updateAssessResult() {
     currentIntensity = 'C';
   }
 
-  // Sync intensity tabs
   document.querySelectorAll('.int-tab').forEach(t => {
     t.classList.toggle('active', t.dataset.level === currentIntensity);
   });
@@ -1020,7 +1137,6 @@ function renderExercises() {
   const container = document.getElementById('exercise-list');
   const exercises = WORKOUTS[currentDay]?.[currentIntensity] || [];
   const title = WORKOUTS[currentDay]?.title || '';
-
   container.innerHTML = `<div class="card-title" style="margin-bottom:16px">${title}</div>`;
 
   if (!exercises.length) {
@@ -1035,7 +1151,7 @@ function renderExercises() {
     row.innerHTML = `
       <div class="exercise-num" style="${done?'background:var(--green);color:#000':''}">${i+1}</div>
       <div class="exercise-info">
-        <div class="exercise-name" style="${done?'text-decoration:line-through;color:var(--muted)':''}"> ${ex.name}</div>
+        <div class="exercise-name" style="${done?'text-decoration:line-through;color:var(--muted)':''}">${ex.name}</div>
         <div class="exercise-meta">${ex.sets} 組 × ${ex.reps} 次　休息 ${ex.rest}　<span style="color:var(--accent)">${ex.key}</span></div>
         ${ex.note ? `<div class="exercise-note">💡 ${ex.note}</div>` : ''}
       </div>
@@ -1088,8 +1204,6 @@ function finishWorkout() {
 // ============================================================
 function updateTracking() {
   const logs = state.logs || {};
-
-  // Weight chart (last 7 days)
   const chart = document.getElementById('weight-chart');
   chart.innerHTML = '';
   const today7 = [];
@@ -1118,7 +1232,6 @@ function updateTracking() {
     chart.appendChild(bar);
   });
 
-  // History
   const hist = document.getElementById('history-list');
   const entries = Object.entries(logs)
     .filter(([,v]) => v.weight || v.xpEarned)
@@ -1146,21 +1259,6 @@ function updateTracking() {
     hist.appendChild(item);
   });
 }
-
-// ============================================================
-// INIT
-// ============================================================
-window.addEventListener('DOMContentLoaded', () => {
-  if (!state.assessAnswers || state.assessAnswers.length < 5) state.assessAnswers = [null,null,null,null,null];
-  updateHome();
-  initQuest();
-
-  // Pre-fill today's saved values
-  const td = today();
-  if (state.logs[td]?.weight) document.getElementById('today-weight').value = state.logs[td].weight;
-  if (state.logs[td]?.steps) document.getElementById('today-steps').value = state.logs[td].steps;
-  if (state.logs[td]?.note) document.getElementById('today-note').value = state.logs[td].note;
-});
 </script>
 </body>
 </html>
