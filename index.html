@@ -605,9 +605,7 @@ const db = firebase.firestore();
 
 function signInWithGoogle() {
   const provider = new firebase.auth.GoogleAuthProvider();
-  auth.signInWithPopup(provider).catch(err => {
-    showToast('登入失敗：' + err.message);
-  });
+  auth.signInWithRedirect(provider);
 }
 
 function signOutUser() {
